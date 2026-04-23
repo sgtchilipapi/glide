@@ -194,15 +194,13 @@ Main addon files:
 - `addons/glide_web3/plugin.gd`
 
 UI:
-- `addons/glide_web3/ui/glide_web3_panel.gd`
+- `addons/glide_web3/plugin.gd`
 
 Constants:
 - `addons/glide_web3/config/glide_constants.gd`
 
-Validation and export helpers:
-- `addons/glide_web3/editor/export_setup_validator.gd`
-- `addons/glide_web3/editor/preset_discovery.gd`
-- `addons/glide_web3/editor/export_runner.gd`
+Current active editor logic:
+- `addons/glide_web3/plugin.gd`
 
 Shell files:
 - `addons/glide_web3/web_shell/index.html`
@@ -211,7 +209,7 @@ Shell files:
 ## Current Development Status
 
 Completed up to:
-- 1.11 custom shell path for export
+- 1.12 Slice 1 stabilization
 
 Next planned item:
-- 1.12 Slice 1 stabilization
+- Slice 2.1 bridge interface and shell ping path
