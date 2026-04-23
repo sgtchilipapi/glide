@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>$GODOT_PROJECT_NAME</title>
+	$GODOT_HEAD_INCLUDE
+	<style>
+		html,
+		body {
+			margin: 0;
+			padding: 0;
+			width: 100%;
+			height: 100%;
+			background: #10141c;
+			color: #f5f7fb;
+			font-family: Arial, sans-serif;
+		}
+
+		body {
+			display: flex;
+			flex-direction: column;
+		}
+
+		#glide-shell-marker {
+			padding: 10px 14px;
+			font-size: 13px;
+			letter-spacing: 0.04em;
+			text-transform: uppercase;
+			background: #18202d;
+			border-bottom: 1px solid #253246;
+		}
+
+		#glide-shell-status {
+			padding: 8px 14px;
+			font-size: 13px;
+			background: #0f1722;
+			border-bottom: 1px solid #253246;
+		}
+
+		#canvas-wrap {
+			flex: 1;
+			min-height: 0;
+		}
+
+		#canvas {
+			display: block;
+			width: 100%;
+			height: 100%;
+			border: 0;
+		}
+	</style>
+</head>
+<body>
+	<div id="glide-shell-marker">Glide Web Shell Template</div>
+	<div id="glide-shell-status">Bridge: loading</div>
+	<div id="canvas-wrap">
+		<canvas id="canvas">
+			Your browser does not support the HTML5 canvas tag.
+		</canvas>
+	</div>
+
+	<script src="bridge.js"></script>
+	<script src="$GODOT_URL"></script>
+	<script>
+		(function () {
+			const status = document.getElementById("glide-shell-status");
+			if (window.glideWallet && typeof window.glideWallet.ping === "function") {
+				status.textContent = "Bridge: ready";
+			} else {
+				status.textContent = "Bridge: missing";
+			}
+
+			const engine = new Engine($GODOT_CONFIG);
+			engine.startGame();
+		}());
+	</script>
+</body>
+</html>
