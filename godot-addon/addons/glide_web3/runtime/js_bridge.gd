@@ -117,14 +117,14 @@ func call_async(method_name: String, payload: Variant = {}) -> int:
 
 			Promise.resolve(method(payload))
 				.then(function (result) {
-					window[successName](result);
+					window[successName](JSON.stringify(result));
 				})
 				.catch(function (error) {
 					const normalizedError = {
 						code: "javascript_error",
 						message: String(error && error.message ? error.message : error)
 					};
-					window[errorName](normalizedError);
+					window[errorName](JSON.stringify(normalizedError));
 				});
 		}());
 		""" % [
@@ -143,7 +143,7 @@ func call_async(method_name: String, payload: Variant = {}) -> int:
 func _on_js_call_succeeded(args: Array, request_id: int, method_name: String, success_name: String, error_name: String) -> void:
 	var result: Variant = null
 	if not args.is_empty():
-		result = args[0]
+		result = _decode_js_payload(args[0])
 
 	_cleanup_request_callbacks(request_id, success_name, error_name)
 	call_succeeded.emit(request_id, method_name, result)
@@ -154,10 +154,12 @@ func _on_js_call_failed(args: Array, request_id: int, method_name: String, succe
 		"code": "unknown_error",
 		"message": "Unknown JavaScript bridge failure.",
 	}
-	if not args.is_empty() and args[0] is Dictionary:
-		error = args[0]
-	elif not args.is_empty():
-		error["message"] = str(args[0])
+	if not args.is_empty():
+		var decoded_error := _decode_js_payload(args[0])
+		if decoded_error is Dictionary:
+			error = decoded_error
+		else:
+			error["message"] = str(decoded_error)
 
 	_cleanup_request_callbacks(request_id, success_name, error_name)
 	call_failed.emit(request_id, method_name, error)
@@ -183,3 +185,12 @@ func _reserve_request_id() -> int:
 	var request_id := _next_request_id
 	_next_request_id += 1
 	return request_id
+
+
+func _decode_js_payload(value: Variant) -> Variant:
+	if value is String:
+		var parsed := JSON.parse_string(value)
+		if parsed != null:
+			return parsed
+
+	return value
