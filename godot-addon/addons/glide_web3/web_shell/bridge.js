@@ -7,7 +7,7 @@
 		ping: async function () {
 			return {
 				ok: true,
-				source: "glide-shell"
+				source: "shell"
 			};
 		}
 	};

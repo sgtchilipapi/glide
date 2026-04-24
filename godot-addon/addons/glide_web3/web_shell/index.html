@@ -65,12 +65,16 @@
 	<script>
 		(function () {
 			const status = document.getElementById("glide-shell-status");
-			if (window.glideWallet && typeof window.glideWallet.ping === "function") {
-				status.textContent = "Bridge: ready";
-			} else {
+			const bridgeReady = !!(window.glideWallet && typeof window.glideWallet.ping === "function");
+			window.__glideBridgeReady = bridgeReady;
+
+			if (!bridgeReady) {
 				status.textContent = "Bridge: missing";
+				console.error("[Glide Web3] bridge.js did not initialize window.glideWallet before Godot boot");
+				return;
 			}
 
+			status.textContent = "Bridge: ready";
 			const engine = new Engine($GODOT_CONFIG);
 			engine.startGame();
 		}());

@@ -12,6 +12,11 @@ Current implemented scope:
 - detect managed Web export preset `GlideWeb`
 - trigger a real Web export command using the managed preset
 - configure the managed preset to use the Glide custom Web shell during build
+- load the shell bridge before Godot boot and stop boot if the bridge is missing
+- include a Godot-side JS bridge helper for future shell calls
+- include a `Ping Shell` button in the plugin UI that checks bridge availability through the Godot JS bridge helper
+- include a runtime demo scene for web builds:
+  - `addons/glide_web3/tests/bridge_ping_demo.tscn`
 
 Not implemented yet:
 - automatic preset creation
@@ -80,6 +85,7 @@ You should see:
 - output path
 - `Validate Setup`
 - `Build Web`
+- `Ping Shell`
 
 ## Create the Managed Preset
 
@@ -172,6 +178,34 @@ addons/glide_web3/web_shell/bridge.js
 
 into the export output folder so the exported HTML can load it.
 
+## Slice 2 Runtime Ping Test
+
+For the real Godot-to-shell ping test, use this demo scene:
+
+```text
+addons/glide_web3/tests/bridge_ping_demo.tscn
+```
+
+Test flow:
+
+1. open the demo scene in Godot
+2. temporarily make it the main scene for a Web test build, or instance it into a test scene
+3. build Web with Glide
+4. open the exported app in a browser
+5. click `Ping Shell`
+
+Expected runtime result:
+
+```text
+JS bridge call succeeded.
+Method: ping
+Result: {"ok":true,"source":"shell"}
+```
+
+Important:
+- the plugin panel `Ping Shell` button is only a bridge-availability check
+- the real end-to-end ping must be tested in the exported Web app using the runtime demo scene
+
 ## Known Failure Case
 
 If `Build Web` fails with missing export templates, install them in Godot:
@@ -202,6 +236,13 @@ Constants:
 Current active editor logic:
 - `addons/glide_web3/plugin.gd`
 
+Runtime bridge helper:
+- `addons/glide_web3/runtime/js_bridge.gd`
+
+Runtime demo scene:
+- `addons/glide_web3/tests/bridge_ping_demo.tscn`
+- `addons/glide_web3/tests/bridge_ping_demo.gd`
+
 Shell files:
 - `addons/glide_web3/web_shell/index.html`
 - `addons/glide_web3/web_shell/bridge.js`
@@ -209,7 +250,7 @@ Shell files:
 ## Current Development Status
 
 Completed up to:
-- 1.12 Slice 1 stabilization
+- Slice 2 bridge viability vertical slice
 
 Next planned item:
-- Slice 2.1 bridge interface and shell ping path
+- Slice 3 plugin config persistence

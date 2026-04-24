@@ -2,6 +2,7 @@
 extends EditorPlugin
 
 const GlideConstants := preload("res://addons/glide_web3/config/glide_constants.gd")
+const JsBridge := preload("res://addons/glide_web3/runtime/js_bridge.gd")
 const EXPORT_PRESETS_FILE := "res://export_presets.cfg"
 
 var _panel: Control
@@ -69,6 +70,11 @@ func _build_panel_ui() -> void:
 	build_button.pressed.connect(_on_build_web_pressed)
 	button_row.add_child(build_button)
 
+	var ping_button := Button.new()
+	ping_button.text = "Ping Shell"
+	ping_button.pressed.connect(_on_ping_shell_pressed)
+	button_row.add_child(ping_button)
+
 	_status_label = Label.new()
 	_status_label.text = "Ready."
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -98,6 +104,25 @@ func _on_build_web_pressed() -> void:
 
 	var export_result: Dictionary = _run_web_export()
 	_set_lines(export_result.get("lines", ["Export finished."]))
+
+
+func _on_ping_shell_pressed() -> void:
+	var bridge_status := JsBridge.get_bridge_status()
+	if not bridge_status.get("ok", false):
+		_set_lines([
+			"JS bridge call failed.",
+			"Method: ping",
+			"Error code: %s" % str(bridge_status.get("code", "unknown_error")),
+			"Error message: %s" % str(bridge_status.get("message", "Unknown error.")),
+		])
+		return
+
+	_set_lines([
+		"JS bridge call available.",
+		"Method: ping",
+		"Bridge status: ready",
+		"Next step: route runtime ping through a Web-facing test surface.",
+	])
 
 
 func _refresh_preset_status() -> void:

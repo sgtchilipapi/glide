@@ -67,6 +67,36 @@ Required loop for every slice:
 6. record pass/fail
 7. fix before moving forward
 
+## Local iteration workflow
+
+For this repository's current local development loop, every implementation iteration must also do the following before reporting test results:
+
+1. replace the sample project addon folder:
+   - `C:\Users\Paps\Documents\sample\addons\glide_web3`
+   - with the current repo copy from:
+   - `C:\Users\Paps\projects\glide\godot-addon\addons\glide_web3`
+2. delete the sample project build folder:
+   - `C:\Users\Paps\Documents\sample\build`
+3. after deleting the build folder, run a fresh Godot build or export before checking build outputs
+4. use the sample project at:
+   - `C:\Users\Paps\Documents\sample`
+5. run Godot verification/export commands with the verified executable:
+   - `C:\Users\Paps\Desktop\Godot_v4.6.2-stable_win64.exe\Godot_v4.6.2-stable_win64.exe`
+6. after a successful Web build, serve the exported app over local HTTP before runtime testing:
+   - working directory:
+   - `C:\Users\Paps\Documents\sample\build\web`
+   - example command:
+   - `python -m http.server 8000`
+   - example URL:
+   - `http://127.0.0.1:8000/index.html`
+
+### Notes
+
+- Prefer the verified regular Godot executable above for automation.
+- Do not rely on `Godot_v4.6.2-stable_win64_console.exe` for automation in this environment because it hit Windows elevation error `740`.
+- Do not rely on opening exported Web builds with `file://` paths for runtime testing. Serve them over local HTTP.
+- This local workflow is an implementation/testing convenience for this machine and does not change the product requirements for end users.
+
 ---
 
 # Repository / Workspace Structure
