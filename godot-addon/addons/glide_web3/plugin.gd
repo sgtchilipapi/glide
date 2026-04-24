@@ -11,6 +11,7 @@ var _bottom_panel_button: Button
 var _status_label: Label
 var _preset_status_label: Label
 var _output_dir_label: Label
+var _shell_path_label: Label
 var _backend_url_edit: LineEdit
 var _output_dir_edit: LineEdit
 var _app_title_edit: LineEdit
@@ -36,6 +37,7 @@ func _exit_tree() -> void:
 		_status_label = null
 		_preset_status_label = null
 		_output_dir_label = null
+		_shell_path_label = null
 		_backend_url_edit = null
 		_output_dir_edit = null
 		_app_title_edit = null
@@ -69,6 +71,11 @@ func _build_panel_ui() -> void:
 	_output_dir_label.text = "Output: %s" % _get_output_dir()
 	_output_dir_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(_output_dir_label)
+
+	_shell_path_label = Label.new()
+	_shell_path_label.text = "Shell HTML: %s" % GlideConstants.WEB_SHELL_HTML
+	_shell_path_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(_shell_path_label)
 
 	var form := GridContainer.new()
 	form.columns = 2
@@ -191,6 +198,7 @@ func _on_save_config_pressed() -> void:
 		"Backend URL: %s" % _plugin_config.backend_url,
 		"Output: %s" % _plugin_config.output_dir,
 		"App title: %s" % _plugin_config.app_title,
+		"Shell HTML: %s" % GlideConstants.WEB_SHELL_HTML,
 		"PWA enabled: %s" % str(_plugin_config.pwa_enabled),
 	])
 
@@ -326,6 +334,7 @@ func _validate_output_dir(messages: Array[String]) -> bool:
 		return false
 
 	messages.append("INFO: Output path resolves to: %s" % absolute_path)
+	messages.append("INFO: Managed shell path: %s" % GlideConstants.WEB_SHELL_HTML)
 	return true
 
 
@@ -482,6 +491,13 @@ func _run_web_export() -> Dictionary:
 		lines.push_front("Export failed.")
 		return {"ok": false, "lines": lines}
 
+	var build_config_result := _apply_build_config(output_file_absolute)
+	for config_line in build_config_result.get("lines", []):
+		lines.append(str(config_line))
+	if not build_config_result.get("ok", false):
+		lines.push_front("Export failed.")
+		return {"ok": false, "lines": lines}
+
 	lines.push_front("Export succeeded.")
 	return {
 		"ok": true,
@@ -607,6 +623,57 @@ func _copy_shell_assets(output_dir_absolute: String) -> Dictionary:
 	return {
 		"ok": true,
 		"lines": ["Copied shell asset: %s" % target_bridge_absolute],
+	}
+
+
+func _apply_build_config(output_file_absolute: String) -> Dictionary:
+	var app_title := _plugin_config.app_title.strip_edges()
+	if app_title.is_empty():
+		app_title = "Glide App"
+
+	if not FileAccess.file_exists(output_file_absolute):
+		return {
+			"ok": false,
+			"lines": ["Missing exported HTML for build config step: %s" % output_file_absolute],
+		}
+
+	var file := FileAccess.open(output_file_absolute, FileAccess.READ)
+	if file == null:
+		return {
+			"ok": false,
+			"lines": ["Could not open exported HTML for reading: %s" % output_file_absolute],
+		}
+
+	var html := file.get_as_text()
+	file.close()
+
+	var title_start := html.find("<title>")
+	var title_end := html.find("</title>")
+	if title_start == -1 or title_end == -1 or title_end <= title_start:
+		return {
+			"ok": false,
+			"lines": ["Could not find <title> tag in exported HTML: %s" % output_file_absolute],
+		}
+
+	var updated_html := "%s<title>%s</title>%s" % [
+		html.substr(0, title_start),
+		app_title,
+		html.substr(title_end + 8),
+	]
+
+	file = FileAccess.open(output_file_absolute, FileAccess.WRITE)
+	if file == null:
+		return {
+			"ok": false,
+			"lines": ["Could not open exported HTML for writing: %s" % output_file_absolute],
+		}
+
+	file.store_string(updated_html)
+	file.close()
+
+	return {
+		"ok": true,
+		"lines": ["Applied app title to exported HTML: %s" % app_title],
 	}
 
 

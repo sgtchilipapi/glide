@@ -18,6 +18,10 @@ Current implemented scope:
 - include a runtime demo scene for web builds:
   - `addons/glide_web3/tests/bridge_ping_demo.tscn`
 - create a persistent plugin config file with default fields
+- edit and save plugin config from the Glide panel
+- reload saved config on plugin startup
+- show preset, output path, and shell path in the panel
+- use saved config values for managed build output path and app title
 
 Not implemented yet:
 - automatic preset creation
@@ -84,6 +88,9 @@ The Glide UI is in the Godot bottom panel area.
 You should see:
 - preset status
 - output path
+- shell path
+- config fields
+- `Save Config`
 - `Validate Setup`
 - `Build Web`
 - `Ping Shell`
@@ -137,11 +144,14 @@ Click `Build Web` in the `Glide Web3` panel.
 Current build behavior:
 - runs validation
 - checks that preset `GlideWeb` exists
-- creates `res://build/web/` if needed
+- uses the saved `Output Dir` config value
+- creates the configured output directory if needed
 - calls the Godot editor executable in headless mode
 - runs `--export-release GlideWeb`
+- copies `bridge.js` into the output folder
+- rewrites exported HTML title from saved `App Title`
 
-Current target output file:
+Current default target output file:
 
 ```text
 res://build/web/index.html
@@ -178,6 +188,10 @@ addons/glide_web3/web_shell/bridge.js
 ```
 
 into the export output folder so the exported HTML can load it.
+
+Important:
+- these post-export steps are part of Glide's managed `Build Web` flow
+- a raw standalone Godot CLI export is not the same thing and will not, by itself, copy `bridge.js` or apply the saved app title
 
 ## Slice 2 Runtime Ping Test
 
@@ -262,7 +276,7 @@ Shell files:
 ## Current Development Status
 
 Completed up to:
-- Slice 3.1 plugin config resource/file
+- Slice 3 complete
 
 Next planned item:
-- Slice 3.2 config fields in editor UI
+- Slice 4.1 WalletService interface
