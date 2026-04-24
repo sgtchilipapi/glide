@@ -18,6 +18,9 @@ Current implemented scope:
 - include a runtime demo scene for web builds:
   - `addons/glide_web3/tests/bridge_ping_demo.tscn`
   - `addons/glide_web3/tests/wallet_login_demo.tscn`
+- include a runtime wallet API with a mock login flow:
+  - `WalletService`
+  - `WebWalletService`
 - create a persistent plugin config file with default fields
 - edit and save plugin config from the Glide panel
 - reload saved config on plugin startup
@@ -27,7 +30,6 @@ Current implemented scope:
 Not implemented yet:
 - automatic preset creation
 - Phantom login flow
-- runtime wallet API
 - PWA packaging
 
 ## Current Requirements
@@ -310,7 +312,7 @@ Shell files:
 ## Current Development Status
 
 Completed up to:
-- Slice 4.5 mock WalletService login flow
+- Slice 4 complete
 
 Next planned item:
-- Slice 4.6 Slice 4 stabilization
+- Slice 5.1 shell environment/config structure
