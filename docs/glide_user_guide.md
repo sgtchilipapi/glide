@@ -17,6 +17,7 @@ Current implemented scope:
 - include a `Ping Shell` button in the plugin UI that checks bridge availability through the Godot JS bridge helper
 - include a runtime demo scene for web builds:
   - `addons/glide_web3/tests/bridge_ping_demo.tscn`
+  - `addons/glide_web3/tests/wallet_login_demo.tscn`
 - create a persistent plugin config file with default fields
 - edit and save plugin config from the Glide panel
 - reload saved config on plugin startup
@@ -265,9 +266,42 @@ Current active editor logic:
 Runtime bridge helper:
 - `addons/glide_web3/runtime/js_bridge.gd`
 
+Runtime service boundary:
+- `addons/glide_web3/runtime/wallet_service.gd`
+- `addons/glide_web3/runtime/web_wallet_service.gd`
+
 Runtime demo scene:
 - `addons/glide_web3/tests/bridge_ping_demo.tscn`
 - `addons/glide_web3/tests/bridge_ping_demo.gd`
+- `addons/glide_web3/tests/wallet_login_demo.tscn`
+- `addons/glide_web3/tests/wallet_login_demo.gd`
+
+## Slice 4 Mock Login Test
+
+For the WalletService-based mock login flow, use:
+
+```text
+addons/glide_web3/tests/wallet_login_demo.tscn
+```
+
+Test flow:
+
+1. open the demo scene in Godot
+2. temporarily make it the main scene for a Web test build
+3. build Web with Glide
+4. serve the exported app over local HTTP
+5. open the app in a browser
+6. click `Login`
+
+Expected runtime result:
+
+```text
+Logged in: true
+Status: Login succeeded.
+Address: MOCK_ADDRESS_001
+```
+
+The scene uses `WebWalletService`, not direct bridge calls.
 
 Shell files:
 - `addons/glide_web3/web_shell/index.html`
@@ -276,7 +310,7 @@ Shell files:
 ## Current Development Status
 
 Completed up to:
-- Slice 3 complete
+- Slice 4.5 mock WalletService login flow
 
 Next planned item:
-- Slice 4.1 WalletService interface
+- Slice 4.6 Slice 4 stabilization
