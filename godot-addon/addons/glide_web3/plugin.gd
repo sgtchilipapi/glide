@@ -2,6 +2,7 @@
 extends EditorPlugin
 
 const GlideConstants := preload("res://addons/glide_web3/config/glide_constants.gd")
+const GlidePluginConfig := preload("res://addons/glide_web3/config/glide_plugin_config.gd")
 const JsBridge := preload("res://addons/glide_web3/runtime/js_bridge.gd")
 const EXPORT_PRESETS_FILE := "res://export_presets.cfg"
 
@@ -9,8 +10,15 @@ var _panel: Control
 var _bottom_panel_button: Button
 var _status_label: Label
 var _preset_status_label: Label
+var _output_dir_label: Label
+var _backend_url_edit: LineEdit
+var _output_dir_edit: LineEdit
+var _app_title_edit: LineEdit
+var _pwa_enabled_check: CheckBox
+var _plugin_config: GlidePluginConfig
 
 func _enter_tree() -> void:
+	_plugin_config = _load_or_create_plugin_config()
 	_panel = PanelContainer.new()
 	_panel.name = GlideConstants.PLUGIN_NAME
 	_build_panel_ui()
@@ -27,6 +35,12 @@ func _exit_tree() -> void:
 		_bottom_panel_button = null
 		_status_label = null
 		_preset_status_label = null
+		_output_dir_label = null
+		_backend_url_edit = null
+		_output_dir_edit = null
+		_app_title_edit = null
+		_pwa_enabled_check = null
+		_plugin_config = null
 	print("%s plugin disabled." % GlideConstants.PLUGIN_NAME)
 
 
@@ -51,14 +65,61 @@ func _build_panel_ui() -> void:
 	_preset_status_label.text = _get_preset_status_text()
 	content.add_child(_preset_status_label)
 
-	var output_dir_label := Label.new()
-	output_dir_label.text = "Output: %s" % GlideConstants.DEFAULT_OUTPUT_DIR
-	output_dir_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(output_dir_label)
+	_output_dir_label = Label.new()
+	_output_dir_label.text = "Output: %s" % _get_output_dir()
+	_output_dir_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(_output_dir_label)
+
+	var form := GridContainer.new()
+	form.columns = 2
+	form.add_theme_constant_override("h_separation", 8)
+	form.add_theme_constant_override("v_separation", 6)
+	content.add_child(form)
+
+	var backend_url_title := Label.new()
+	backend_url_title.text = "Backend URL"
+	form.add_child(backend_url_title)
+
+	_backend_url_edit = LineEdit.new()
+	_backend_url_edit.placeholder_text = "https://api.example.com"
+	_backend_url_edit.text = _plugin_config.backend_url
+	form.add_child(_backend_url_edit)
+
+	var output_dir_title := Label.new()
+	output_dir_title.text = "Output Dir"
+	form.add_child(output_dir_title)
+
+	_output_dir_edit = LineEdit.new()
+	_output_dir_edit.placeholder_text = GlideConstants.DEFAULT_OUTPUT_DIR
+	_output_dir_edit.text = _plugin_config.output_dir
+	form.add_child(_output_dir_edit)
+
+	var app_title_title := Label.new()
+	app_title_title.text = "App Title"
+	form.add_child(app_title_title)
+
+	_app_title_edit = LineEdit.new()
+	_app_title_edit.placeholder_text = "Glide App"
+	_app_title_edit.text = _plugin_config.app_title
+	form.add_child(_app_title_edit)
+
+	var pwa_title := Label.new()
+	pwa_title.text = "Enable PWA"
+	form.add_child(pwa_title)
+
+	_pwa_enabled_check = CheckBox.new()
+	_pwa_enabled_check.text = "On"
+	_pwa_enabled_check.button_pressed = _plugin_config.pwa_enabled
+	form.add_child(_pwa_enabled_check)
 
 	var button_row := HBoxContainer.new()
 	button_row.add_theme_constant_override("separation", 8)
 	content.add_child(button_row)
+
+	var save_button := Button.new()
+	save_button.text = "Save Config"
+	save_button.pressed.connect(_on_save_config_pressed)
+	button_row.add_child(save_button)
 
 	var validate_button := Button.new()
 	validate_button.text = "Validate Setup"
@@ -84,12 +145,14 @@ func _build_panel_ui() -> void:
 func _on_validate_setup_pressed() -> void:
 	var result: Dictionary = _validate_setup()
 	_refresh_preset_status()
+	_refresh_output_dir_label()
 	_set_validation_status(result)
 
 
 func _on_build_web_pressed() -> void:
 	var result: Dictionary = _validate_setup()
 	_refresh_preset_status()
+	_refresh_output_dir_label()
 
 	if result.get("errors", 0) > 0:
 		_set_validation_status(result)
@@ -104,6 +167,32 @@ func _on_build_web_pressed() -> void:
 
 	var export_result: Dictionary = _run_web_export()
 	_set_lines(export_result.get("lines", ["Export finished."]))
+
+
+func _on_save_config_pressed() -> void:
+	_plugin_config.backend_url = _backend_url_edit.text.strip_edges()
+	_plugin_config.output_dir = _output_dir_edit.text.strip_edges()
+	_plugin_config.app_title = _app_title_edit.text.strip_edges()
+	_plugin_config.pwa_enabled = _pwa_enabled_check.button_pressed
+	_plugin_config.preset_name = GlideConstants.MANAGED_PRESET_NAME
+
+	if _plugin_config.output_dir.is_empty():
+		_plugin_config.output_dir = GlideConstants.DEFAULT_OUTPUT_DIR
+		_output_dir_edit.text = _plugin_config.output_dir
+
+	if _plugin_config.app_title.is_empty():
+		_plugin_config.app_title = "Glide App"
+		_app_title_edit.text = _plugin_config.app_title
+
+	_save_plugin_config(_plugin_config)
+	_refresh_output_dir_label()
+	_set_lines([
+		"Config saved.",
+		"Backend URL: %s" % _plugin_config.backend_url,
+		"Output: %s" % _plugin_config.output_dir,
+		"App title: %s" % _plugin_config.app_title,
+		"PWA enabled: %s" % str(_plugin_config.pwa_enabled),
+	])
 
 
 func _on_ping_shell_pressed() -> void:
@@ -128,6 +217,11 @@ func _on_ping_shell_pressed() -> void:
 func _refresh_preset_status() -> void:
 	if _preset_status_label:
 		_preset_status_label.text = _get_preset_status_text()
+
+
+func _refresh_output_dir_label() -> void:
+	if _output_dir_label:
+		_output_dir_label.text = "Output: %s" % _get_output_dir()
 
 
 func _set_validation_status(result: Dictionary) -> void:
@@ -221,7 +315,7 @@ func _validate_shell_files(messages: Array[String]) -> bool:
 
 
 func _validate_output_dir(messages: Array[String]) -> bool:
-	var output_dir := GlideConstants.DEFAULT_OUTPUT_DIR
+	var output_dir := _get_output_dir()
 	if not (output_dir.begins_with("res://") or output_dir.begins_with("user://")):
 		messages.append("ERROR: Output path must start with res:// or user://: %s" % output_dir)
 		return false
@@ -329,7 +423,7 @@ func _get_preset_status_text() -> String:
 
 func _run_web_export() -> Dictionary:
 	var project_root := ProjectSettings.globalize_path("res://")
-	var output_dir_absolute := ProjectSettings.globalize_path(GlideConstants.DEFAULT_OUTPUT_DIR)
+	var output_dir_absolute := ProjectSettings.globalize_path(_get_output_dir())
 	var output_file_absolute := output_dir_absolute.path_join(GlideConstants.DEFAULT_WEB_EXPORT_FILE)
 	var executable_path := OS.get_executable_path()
 	var lines: Array[String] = []
@@ -514,3 +608,54 @@ func _copy_shell_assets(output_dir_absolute: String) -> Dictionary:
 		"ok": true,
 		"lines": ["Copied shell asset: %s" % target_bridge_absolute],
 	}
+
+
+func _load_or_create_plugin_config() -> GlidePluginConfig:
+	var config := GlidePluginConfig.new()
+	config.output_dir = GlideConstants.DEFAULT_OUTPUT_DIR
+	config.preset_name = GlideConstants.MANAGED_PRESET_NAME
+
+	if FileAccess.file_exists(GlideConstants.CONFIG_FILE_PATH):
+		var file := ConfigFile.new()
+		var load_error := file.load(GlideConstants.CONFIG_FILE_PATH)
+		if load_error == OK:
+			config.backend_url = str(file.get_value("glide", "backend_url", config.backend_url))
+			config.output_dir = str(file.get_value("glide", "output_dir", config.output_dir))
+			config.pwa_enabled = bool(file.get_value("glide", "pwa_enabled", config.pwa_enabled))
+			config.app_title = str(file.get_value("glide", "app_title", config.app_title))
+			config.preset_name = str(file.get_value("glide", "preset_name", config.preset_name))
+			return config
+
+	_save_plugin_config(config)
+	return config
+
+
+func _save_plugin_config(config: GlidePluginConfig) -> void:
+	var file := ConfigFile.new()
+	file.set_value("glide", "backend_url", config.backend_url)
+	file.set_value("glide", "output_dir", config.output_dir)
+	file.set_value("glide", "pwa_enabled", config.pwa_enabled)
+	file.set_value("glide", "app_title", config.app_title)
+	file.set_value("glide", "preset_name", config.preset_name)
+
+	var config_dir_absolute := ProjectSettings.globalize_path(GlideConstants.CONFIG_DIR)
+	var dir_error := DirAccess.make_dir_recursive_absolute(config_dir_absolute)
+	if dir_error != OK:
+		push_warning("Could not create Glide config directory %s (error %d)." % [
+			GlideConstants.CONFIG_DIR,
+			dir_error,
+		])
+		return
+
+	var save_error := file.save(GlideConstants.CONFIG_FILE_PATH)
+	if save_error != OK:
+		push_warning("Could not save Glide plugin config to %s (error %d)." % [
+			GlideConstants.CONFIG_FILE_PATH,
+			save_error,
+		])
+
+
+func _get_output_dir() -> String:
+	if _plugin_config and not _plugin_config.output_dir.is_empty():
+		return _plugin_config.output_dir
+	return GlideConstants.DEFAULT_OUTPUT_DIR

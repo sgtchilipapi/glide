@@ -2,6 +2,6 @@
 
 Glide is a toolkit for building wallet-enabled web games for the Godot game engine.
 
-Current status: Slice 1 working state: installable addon, visible `Glide Web3` bottom panel, setup validation, managed preset discovery, real Web export, and managed custom shell hookup.
+Current status: Slice 3.2 in progress: persistent plugin config now saves to a project-owned config file, and the editor panel exposes editable config fields with a save action.
 
-Next checkpoint: Slice 2 complete. Next move is Slice 3 persistent plugin config.
+Next checkpoint: Slice 3.3 confirm startup rehydration and carry config through the build path.

@@ -17,6 +17,7 @@ Current implemented scope:
 - include a `Ping Shell` button in the plugin UI that checks bridge availability through the Godot JS bridge helper
 - include a runtime demo scene for web builds:
   - `addons/glide_web3/tests/bridge_ping_demo.tscn`
+- create a persistent plugin config file with default fields
 
 Not implemented yet:
 - automatic preset creation
@@ -233,6 +234,17 @@ UI:
 Constants:
 - `addons/glide_web3/config/glide_constants.gd`
 
+Persistent plugin config:
+- `addons/glide_web3/config/glide_plugin_config.gd`
+- `glide/glide_plugin_config.cfg` after first plugin load
+
+Current panel config controls:
+- `Backend URL`
+- `Output Dir`
+- `App Title`
+- `Enable PWA`
+- `Save Config`
+
 Current active editor logic:
 - `addons/glide_web3/plugin.gd`
 
@@ -250,7 +262,7 @@ Shell files:
 ## Current Development Status
 
 Completed up to:
-- Slice 2 bridge viability vertical slice
+- Slice 3.1 plugin config resource/file
 
 Next planned item:
-- Slice 3 plugin config persistence
+- Slice 3.2 config fields in editor UI
