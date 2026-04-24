@@ -23,6 +23,8 @@ Current implemented scope:
   - `WebWalletService`
 - include a shell environment object for future provider integration:
   - `window.__glideEnv`
+- include a standalone shell toolchain folder:
+  - `web-shell/`
 - create a persistent plugin config file with default fields
 - edit and save plugin config from the Glide panel
 - reload saved config on plugin startup
@@ -225,6 +227,22 @@ provider.mode = mock
 
 This is preparation for real Phantom SDK wiring in Slice 5.
 
+## Standalone Web Shell Tooling
+
+The repository now includes:
+
+```text
+web-shell/
+```
+
+Current dependency:
+- `@phantom/browser-sdk`
+
+Why:
+- this is Phantom's current official browser SDK for vanilla JS/TS
+- it supports embedded and injected flows
+- the older `@phantom/wallet-sdk` package is deprecated
+
 ## Slice 2 Runtime Ping Test
 
 For the real Godot-to-shell ping test, use this demo scene:
@@ -341,7 +359,7 @@ Shell files:
 ## Current Development Status
 
 Completed up to:
-- Slice 5.1 shell environment/config structure
+- Slice 5.2 Phantom shell dependency setup
 
 Next planned item:
-- Slice 5.2 Phantom shell dependencies
+- Slice 5.3 Phantom provider wrapper boundary
