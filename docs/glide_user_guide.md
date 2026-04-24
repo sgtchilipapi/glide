@@ -21,6 +21,8 @@ Current implemented scope:
 - include a runtime wallet API with a mock login flow:
   - `WalletService`
   - `WebWalletService`
+- include a shell environment object for future provider integration:
+  - `window.__glideEnv`
 - create a persistent plugin config file with default fields
 - edit and save plugin config from the Glide panel
 - reload saved config on plugin startup
@@ -196,6 +198,33 @@ Important:
 - these post-export steps are part of Glide's managed `Build Web` flow
 - a raw standalone Godot CLI export is not the same thing and will not, by itself, copy `bridge.js` or apply the saved app title
 
+## Shell Environment Object
+
+The custom shell now defines:
+
+```text
+window.__glideEnv
+```
+
+Current structure includes:
+- `provider.name`
+- `provider.mode`
+- `phantom.clientId`
+- `phantom.appId`
+- `phantom.redirectOrigin`
+- `backend.url`
+- `runtime.appTitle`
+- `runtime.origin`
+
+Current mode is still mock:
+
+```text
+provider.name = phantom_embedded
+provider.mode = mock
+```
+
+This is preparation for real Phantom SDK wiring in Slice 5.
+
 ## Slice 2 Runtime Ping Test
 
 For the real Godot-to-shell ping test, use this demo scene:
@@ -312,7 +341,7 @@ Shell files:
 ## Current Development Status
 
 Completed up to:
-- Slice 4 complete
+- Slice 5.1 shell environment/config structure
 
 Next planned item:
-- Slice 5.1 shell environment/config structure
+- Slice 5.2 Phantom shell dependencies

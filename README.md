@@ -2,6 +2,6 @@
 
 Glide is a toolkit for building wallet-enabled web games for the Godot game engine.
 
-Current status: Slice 4 complete: the runtime `WalletService` boundary, `WebWalletService`, mock shell login methods, and a WalletService-based demo scene are in place on top of the completed Slice 1 to Slice 3 foundation.
+Current status: Slice 5.1 in progress: the shell now exposes a structured environment/config object for future Phantom integration, on top of the completed Slice 1 to Slice 4 foundation.
 
-Next checkpoint: Slice 5.1 prepare the shell environment/config structure for real Phantom integration.
+Next checkpoint: Slice 5.2 install and wrap the real Phantom shell dependencies.

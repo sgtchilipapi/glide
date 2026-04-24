@@ -5,12 +5,38 @@
 
 	let loggedIn = false;
 	let walletAddress = "";
+	const glideEnv = window.__glideEnv || {
+		provider: {
+			name: "phantom_embedded",
+			mode: "mock"
+		},
+		phantom: {
+			clientId: "",
+			appId: "",
+			redirectOrigin: window.location.origin
+		},
+		backend: {
+			url: ""
+		},
+		runtime: {
+			appTitle: document.title,
+			origin: window.location.origin
+		}
+	};
+	window.__glideEnv = glideEnv;
 
 	window.glideWallet = {
 		ping: async function () {
 			return {
 				ok: true,
-				source: "shell"
+				source: "shell",
+				provider_mode: glideEnv.provider.mode
+			};
+		},
+		getShellEnv: async function () {
+			return {
+				ok: true,
+				env: glideEnv
 			};
 		},
 		login: async function () {
@@ -19,7 +45,9 @@
 			return {
 				ok: true,
 				address: walletAddress,
-				source: "mock_shell"
+				source: "mock_shell",
+				provider: glideEnv.provider.name,
+				provider_mode: glideEnv.provider.mode
 			};
 		},
 		logout: async function () {
