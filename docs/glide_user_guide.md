@@ -335,7 +335,8 @@ Current panel config controls:
 - `Output Dir`
 - `App Title`
 - `Phantom App ID`
-- `Phantom Redirect`
+- `Phantom Origin URL`
+- `Phantom Callback URL`
 - `Enable PWA`
 - `Save Config`
 
@@ -403,13 +404,25 @@ Glide now exposes Phantom config in the plugin UI.
 
 Current fields:
 - `Phantom App ID`
-- `Phantom Redirect`
+- `Phantom Origin URL`
+- `Phantom Callback URL`
 
 Behavior:
 - values persist in `glide/glide_plugin_config.cfg`
 - build rewrites the exported shell env with those values
+- build generates a callback page/file for the configured callback path
 - shell mode becomes `phantom_browser_sdk` when `Phantom App ID` is non-empty
 - otherwise shell stays in `mock` mode
+
+Field meanings:
+- `Phantom App ID`
+  - your app identifier from Phantom Portal
+- `Phantom Origin URL`
+  - exact allowed origin, for example `http://127.0.0.1:8000`
+  - no path
+- `Phantom Callback URL`
+  - exact redirect URL, for example `http://127.0.0.1:8000/auth/callback`
+  - full URL with path
 
 Shell files:
 - `addons/glide_web3/web_shell/index.html`

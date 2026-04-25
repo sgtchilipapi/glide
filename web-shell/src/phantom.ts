@@ -7,7 +7,7 @@ export function createGlidePhantomSdk(env: GlideShellEnv): BrowserSDK {
     addressTypes: [AddressType.solana],
     appId: env.phantom.appId || undefined,
     authOptions: {
-      redirectUrl: env.phantom.redirectOrigin || env.runtime.origin,
+      redirectUrl: env.phantom.callbackUrl || `${env.runtime.origin}/auth/callback`,
     },
     autoConnect: true,
   };

@@ -35659,7 +35659,7 @@ Please ensure the transaction object includes required fields (to, value, chainI
       addressTypes: [DerivationInfoAddressFormatEnum.solana],
       appId: env2.phantom.appId || void 0,
       authOptions: {
-        redirectUrl: env2.phantom.redirectOrigin || env2.runtime.origin
+        redirectUrl: env2.phantom.callbackUrl || `${env2.runtime.origin}/auth/callback`
       },
       autoConnect: true
     };
@@ -35810,7 +35810,8 @@ Please ensure the transaction object includes required fields (to, value, chainI
       phantom: {
         clientId: "",
         appId: "",
-        redirectOrigin: window.location.origin
+        originUrl: window.location.origin,
+        callbackUrl: `${window.location.origin}/auth/callback`
       },
       backend: {
         url: ""

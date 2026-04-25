@@ -16,7 +16,8 @@ var _backend_url_edit: LineEdit
 var _output_dir_edit: LineEdit
 var _app_title_edit: LineEdit
 var _phantom_app_id_edit: LineEdit
-var _phantom_redirect_origin_edit: LineEdit
+var _phantom_origin_url_edit: LineEdit
+var _phantom_callback_url_edit: LineEdit
 var _pwa_enabled_check: CheckBox
 var _plugin_config: GlidePluginConfig
 
@@ -44,7 +45,8 @@ func _exit_tree() -> void:
 		_output_dir_edit = null
 		_app_title_edit = null
 		_phantom_app_id_edit = null
-		_phantom_redirect_origin_edit = null
+		_phantom_origin_url_edit = null
+		_phantom_callback_url_edit = null
 		_pwa_enabled_check = null
 		_plugin_config = null
 	print("%s plugin disabled." % GlideConstants.PLUGIN_NAME)
@@ -123,14 +125,23 @@ func _build_panel_ui() -> void:
 	_phantom_app_id_edit.text = _plugin_config.phantom_app_id
 	form.add_child(_phantom_app_id_edit)
 
-	var phantom_redirect_title := Label.new()
-	phantom_redirect_title.text = "Phantom Redirect"
-	form.add_child(phantom_redirect_title)
+	var phantom_origin_title := Label.new()
+	phantom_origin_title.text = "Phantom Origin URL"
+	form.add_child(phantom_origin_title)
 
-	_phantom_redirect_origin_edit = LineEdit.new()
-	_phantom_redirect_origin_edit.placeholder_text = "https://example.com"
-	_phantom_redirect_origin_edit.text = _plugin_config.phantom_redirect_origin
-	form.add_child(_phantom_redirect_origin_edit)
+	_phantom_origin_url_edit = LineEdit.new()
+	_phantom_origin_url_edit.placeholder_text = "http://127.0.0.1:8000"
+	_phantom_origin_url_edit.text = _plugin_config.phantom_origin_url
+	form.add_child(_phantom_origin_url_edit)
+
+	var phantom_callback_title := Label.new()
+	phantom_callback_title.text = "Phantom Callback URL"
+	form.add_child(phantom_callback_title)
+
+	_phantom_callback_url_edit = LineEdit.new()
+	_phantom_callback_url_edit.placeholder_text = "http://127.0.0.1:8000/auth/callback"
+	_phantom_callback_url_edit.text = _plugin_config.phantom_callback_url
+	form.add_child(_phantom_callback_url_edit)
 
 	var pwa_title := Label.new()
 	pwa_title.text = "Enable PWA"
@@ -203,7 +214,8 @@ func _on_save_config_pressed() -> void:
 	_plugin_config.output_dir = _output_dir_edit.text.strip_edges()
 	_plugin_config.app_title = _app_title_edit.text.strip_edges()
 	_plugin_config.phantom_app_id = _phantom_app_id_edit.text.strip_edges()
-	_plugin_config.phantom_redirect_origin = _phantom_redirect_origin_edit.text.strip_edges()
+	_plugin_config.phantom_origin_url = _phantom_origin_url_edit.text.strip_edges()
+	_plugin_config.phantom_callback_url = _phantom_callback_url_edit.text.strip_edges()
 	_plugin_config.pwa_enabled = _pwa_enabled_check.button_pressed
 	_plugin_config.preset_name = GlideConstants.MANAGED_PRESET_NAME
 
@@ -223,7 +235,8 @@ func _on_save_config_pressed() -> void:
 		"Output: %s" % _plugin_config.output_dir,
 		"App title: %s" % _plugin_config.app_title,
 		"Phantom App ID: %s" % _plugin_config.phantom_app_id,
-		"Phantom Redirect: %s" % _get_phantom_redirect_origin(),
+		"Phantom Origin URL: %s" % _get_phantom_origin_url(),
+		"Phantom Callback URL: %s" % _get_phantom_callback_url(),
 		"Shell HTML: %s" % GlideConstants.WEB_SHELL_HTML,
 		"PWA enabled: %s" % str(_plugin_config.pwa_enabled),
 	])
@@ -361,7 +374,8 @@ func _validate_output_dir(messages: Array[String]) -> bool:
 
 	messages.append("INFO: Output path resolves to: %s" % absolute_path)
 	messages.append("INFO: Managed shell path: %s" % GlideConstants.WEB_SHELL_HTML)
-	messages.append("INFO: Phantom redirect origin: %s" % _get_phantom_redirect_origin())
+	messages.append("INFO: Phantom origin URL: %s" % _get_phantom_origin_url())
+	messages.append("INFO: Phantom callback URL: %s" % _get_phantom_callback_url())
 	return true
 
 
@@ -658,7 +672,8 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 	if app_title.is_empty():
 		app_title = "Glide App"
 	var phantom_app_id := _plugin_config.phantom_app_id.strip_edges()
-	var phantom_redirect_origin := _get_phantom_redirect_origin()
+	var phantom_origin_url := _get_phantom_origin_url()
+	var phantom_callback_url := _get_phantom_callback_url()
 
 	if not FileAccess.file_exists(output_file_absolute):
 		return {
@@ -694,8 +709,12 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 		'const glidePhantomAppId = %s;' % JSON.stringify(phantom_app_id)
 	)
 	updated_html = updated_html.replace(
-		"redirectOrigin: window.location.origin",
-		"redirectOrigin: %s" % JSON.stringify(phantom_redirect_origin)
+		'const glidePhantomOriginUrl = "";',
+		'const glidePhantomOriginUrl = %s;' % JSON.stringify(phantom_origin_url)
+	)
+	updated_html = updated_html.replace(
+		'const glidePhantomCallbackUrl = "";',
+		'const glidePhantomCallbackUrl = %s;' % JSON.stringify(phantom_callback_url)
 	)
 
 	file = FileAccess.open(output_file_absolute, FileAccess.WRITE)
@@ -708,13 +727,124 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 	file.store_string(updated_html)
 	file.close()
 
+	var callback_result := _write_phantom_callback_page(output_file_absolute, phantom_callback_url)
+	if not callback_result.get("ok", false):
+		return callback_result
+
 	return {
 		"ok": true,
 		"lines": [
 			"Applied app title to exported HTML: %s" % app_title,
 			"Applied Phantom App ID to exported HTML: %s" % phantom_app_id,
-			"Applied Phantom redirect origin to exported HTML: %s" % phantom_redirect_origin,
+			"Applied Phantom origin URL to exported HTML: %s" % phantom_origin_url,
+			"Applied Phantom callback URL to exported HTML: %s" % phantom_callback_url,
+			"Generated Phantom callback page for: %s" % phantom_callback_url,
 		],
+	}
+
+
+func _write_phantom_callback_page(output_file_absolute: String, phantom_callback_url: String) -> Dictionary:
+	var callback_path := phantom_callback_url.strip_edges()
+	if callback_path.is_empty():
+		return {
+			"ok": true,
+			"lines": ["Skipped callback page generation because Phantom Callback URL is blank."],
+		}
+
+	var parsed_callback := _parse_callback_output_path(output_file_absolute, callback_path)
+	if not parsed_callback.get("ok", false):
+		return parsed_callback
+
+	var callback_file_absolute := str(parsed_callback.get("file_path", ""))
+	var callback_dir_absolute := callback_file_absolute.get_base_dir()
+	var dir_error := DirAccess.make_dir_recursive_absolute(callback_dir_absolute)
+	if dir_error != OK:
+		return {
+			"ok": false,
+			"lines": [
+				"Could not create Phantom callback directory: %s" % callback_dir_absolute,
+				"DirAccess error code: %d" % dir_error,
+			],
+		}
+
+	var callback_html := """<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Glide Phantom Callback</title>
+</head>
+<body>
+	<script>
+		(function () {
+			var redirectTarget = window.location.origin + "/index.html" + window.location.search + window.location.hash;
+			window.location.replace(redirectTarget);
+		}());
+	</script>
+</body>
+</html>
+"""
+
+	var callback_file := FileAccess.open(callback_file_absolute, FileAccess.WRITE)
+	if callback_file == null:
+		return {
+			"ok": false,
+			"lines": ["Could not open Phantom callback file for writing: %s" % callback_file_absolute],
+		}
+
+	callback_file.store_string(callback_html)
+	callback_file.close()
+
+	return {
+		"ok": true,
+		"lines": ["Generated Phantom callback file: %s" % callback_file_absolute],
+	}
+
+
+func _parse_callback_output_path(output_file_absolute: String, phantom_callback_url: String) -> Dictionary:
+	var callback_url := phantom_callback_url.strip_edges()
+	var separator_index := callback_url.find("://")
+	if separator_index == -1:
+		return {
+			"ok": false,
+			"lines": ["Phantom Callback URL must include protocol, for example http://127.0.0.1:8000/auth/callback"],
+		}
+
+	var path_start := callback_url.find("/", separator_index + 3)
+	var callback_path := "/"
+	if path_start != -1:
+		callback_path = callback_url.substr(path_start)
+
+	var question_index := callback_path.find("?")
+	if question_index != -1:
+		callback_path = callback_path.substr(0, question_index)
+	var hash_index := callback_path.find("#")
+	if hash_index != -1:
+		callback_path = callback_path.substr(0, hash_index)
+
+	callback_path = callback_path.strip_edges()
+	if callback_path.is_empty() or callback_path == "/":
+		callback_path = "/auth/callback"
+
+	var base_output_dir := output_file_absolute.get_base_dir()
+	var callback_segments := callback_path.trim_prefix("/").split("/", false)
+	if callback_segments.is_empty():
+		return {
+			"ok": false,
+			"lines": ["Phantom Callback URL path could not be parsed: %s" % phantom_callback_url],
+		}
+
+	var callback_file_absolute := base_output_dir
+	for index in range(callback_segments.size()):
+		var segment := callback_segments[index]
+		if index == callback_segments.size() - 1:
+			callback_file_absolute = callback_file_absolute.path_join(segment)
+		else:
+			callback_file_absolute = callback_file_absolute.path_join(segment)
+
+	return {
+		"ok": true,
+		"file_path": callback_file_absolute,
 	}
 
 
@@ -732,7 +862,8 @@ func _load_or_create_plugin_config() -> GlidePluginConfig:
 			config.pwa_enabled = bool(file.get_value("glide", "pwa_enabled", config.pwa_enabled))
 			config.app_title = str(file.get_value("glide", "app_title", config.app_title))
 			config.phantom_app_id = str(file.get_value("glide", "phantom_app_id", config.phantom_app_id))
-			config.phantom_redirect_origin = str(file.get_value("glide", "phantom_redirect_origin", config.phantom_redirect_origin))
+			config.phantom_origin_url = str(file.get_value("glide", "phantom_origin_url", file.get_value("glide", "phantom_redirect_origin", config.phantom_origin_url)))
+			config.phantom_callback_url = str(file.get_value("glide", "phantom_callback_url", config.phantom_callback_url))
 			config.preset_name = str(file.get_value("glide", "preset_name", config.preset_name))
 			return config
 
@@ -747,7 +878,8 @@ func _save_plugin_config(config: GlidePluginConfig) -> void:
 	file.set_value("glide", "pwa_enabled", config.pwa_enabled)
 	file.set_value("glide", "app_title", config.app_title)
 	file.set_value("glide", "phantom_app_id", config.phantom_app_id)
-	file.set_value("glide", "phantom_redirect_origin", config.phantom_redirect_origin)
+	file.set_value("glide", "phantom_origin_url", config.phantom_origin_url)
+	file.set_value("glide", "phantom_callback_url", config.phantom_callback_url)
 	file.set_value("glide", "preset_name", config.preset_name)
 
 	var config_dir_absolute := ProjectSettings.globalize_path(GlideConstants.CONFIG_DIR)
@@ -773,7 +905,13 @@ func _get_output_dir() -> String:
 	return GlideConstants.DEFAULT_OUTPUT_DIR
 
 
-func _get_phantom_redirect_origin() -> String:
-	if _plugin_config and not _plugin_config.phantom_redirect_origin.is_empty():
-		return _plugin_config.phantom_redirect_origin
+func _get_phantom_origin_url() -> String:
+	if _plugin_config and not _plugin_config.phantom_origin_url.is_empty():
+		return _plugin_config.phantom_origin_url
 	return "http://127.0.0.1:8000"
+
+
+func _get_phantom_callback_url() -> String:
+	if _plugin_config and not _plugin_config.phantom_callback_url.is_empty():
+		return _plugin_config.phantom_callback_url
+	return "http://127.0.0.1:8000/auth/callback"

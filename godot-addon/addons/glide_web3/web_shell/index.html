@@ -62,6 +62,8 @@
 
 	<script>
 		const glidePhantomAppId = "";
+		const glidePhantomOriginUrl = "";
+		const glidePhantomCallbackUrl = "";
 		window.__glideEnv = {
 			provider: {
 				name: "phantom_embedded",
@@ -70,7 +72,8 @@
 			phantom: {
 				clientId: "",
 				appId: glidePhantomAppId,
-				redirectOrigin: window.location.origin
+				originUrl: glidePhantomOriginUrl || window.location.origin,
+				callbackUrl: glidePhantomCallbackUrl || (window.location.origin + "/auth/callback")
 			},
 			backend: {
 				url: ""

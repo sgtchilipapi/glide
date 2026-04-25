@@ -17,7 +17,8 @@ function getDefaultEnv(): GlideShellEnv {
     phantom: {
       clientId: "",
       appId: "",
-      redirectOrigin: window.location.origin,
+      originUrl: window.location.origin,
+      callbackUrl: `${window.location.origin}/auth/callback`,
     },
     backend: {
       url: "",

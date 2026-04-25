@@ -15,7 +15,8 @@ export interface GlideShellEnv {
   phantom: {
     clientId: string;
     appId: string;
-    redirectOrigin: string;
+    originUrl: string;
+    callbackUrl: string;
   };
   backend: {
     url: string;
