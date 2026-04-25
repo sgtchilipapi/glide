@@ -11,12 +11,13 @@ declare global {
 function getDefaultEnv(): GlideShellEnv {
   return {
     provider: {
-      name: "phantom_embedded",
+      name: "privy_embedded",
       mode: "mock",
+      oauthProvider: "google",
     },
-    phantom: {
-      clientId: "",
+    privy: {
       appId: "",
+      clientId: "",
       originUrl: window.location.origin,
       callbackUrl: `${window.location.origin}/auth/callback`,
     },
@@ -37,4 +38,5 @@ window.glideWallet = createWalletBridge(env);
 console.log("[Glide Web3] bundled bridge loaded", {
   provider: env.provider.name,
   mode: env.provider.mode,
+  oauthProvider: env.provider.oauthProvider,
 });

@@ -3,28 +3,40 @@
 This folder holds the standalone web-shell toolchain for Glide.
 
 Current SDK choice:
-- `@phantom/browser-sdk`
+- `@privy-io/js-sdk-core`
 
 Why this package:
-- Phantom's current official browser docs for vanilla JavaScript/TypeScript use `@phantom/browser-sdk`
-- it supports both injected and embedded provider flows
-- `@phantom/wallet-sdk` is deprecated and should not be used for new integration work
+- Privy’s official vanilla JavaScript docs use `@privy-io/js-sdk-core`
+- Glide uses it to run OAuth login and embedded wallet provisioning from the Web shell
+- Glide now treats Phantom as legacy, not active provider code
 
 Official references:
-- https://docs.phantom.com/sdks/browser-sdk
+- https://docs.privy.io/recipes/core-js
+- https://docs.privy.io/basics/get-started/dashboard/app-clients
+- https://docs.privy.io/recipes/react/allowed-oauth-redirects
 
 Current status:
 - dependency installed
-- no real Phantom runtime wiring yet
-- wrapper module comes next in Slice 5.3
+- active wrapper source lives in:
+  - `src/privy.ts`
+  - `src/walletBridge.ts`
+  - `src/types.ts`
+- build output goes to:
+  - `../godot-addon/addons/glide_web3/web_shell/bridge.js`
 
-Before real integration:
-1. register app in Phantom Portal
-2. obtain App ID
-3. allowlist local/dev origins
-4. allowlist redirect URL used by the app
+Before real Privy login:
+1. create a Privy app
+2. create a Privy app client
+3. configure allowed origins for the app client
+4. configure allowed OAuth redirect URLs
+5. enable the chosen OAuth provider in the Privy Dashboard
 
-Expected next files:
-- `src/phantom.ts`
-- `src/walletBridge.ts`
-- `src/types.ts`
+Build:
+
+```powershell
+cd C:\Users\Paps\projects\glide\web-shell
+npm run build
+```
+
+Legacy Phantom archive:
+- `../legacy/phantom/`

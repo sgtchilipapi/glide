@@ -15,9 +15,10 @@ var _shell_path_label: Label
 var _backend_url_edit: LineEdit
 var _output_dir_edit: LineEdit
 var _app_title_edit: LineEdit
-var _phantom_app_id_edit: LineEdit
-var _phantom_origin_url_edit: LineEdit
-var _phantom_callback_url_edit: LineEdit
+var _privy_app_id_edit: LineEdit
+var _privy_client_id_edit: LineEdit
+var _privy_origin_url_edit: LineEdit
+var _privy_callback_url_edit: LineEdit
 var _pwa_enabled_check: CheckBox
 var _plugin_config: GlidePluginConfig
 
@@ -44,9 +45,10 @@ func _exit_tree() -> void:
 		_backend_url_edit = null
 		_output_dir_edit = null
 		_app_title_edit = null
-		_phantom_app_id_edit = null
-		_phantom_origin_url_edit = null
-		_phantom_callback_url_edit = null
+		_privy_app_id_edit = null
+		_privy_client_id_edit = null
+		_privy_origin_url_edit = null
+		_privy_callback_url_edit = null
 		_pwa_enabled_check = null
 		_plugin_config = null
 	print("%s plugin disabled." % GlideConstants.PLUGIN_NAME)
@@ -116,32 +118,41 @@ func _build_panel_ui() -> void:
 	_app_title_edit.text = _plugin_config.app_title
 	form.add_child(_app_title_edit)
 
-	var phantom_app_id_title := Label.new()
-	phantom_app_id_title.text = "Phantom App ID"
-	form.add_child(phantom_app_id_title)
+	var privy_app_id_title := Label.new()
+	privy_app_id_title.text = "Privy App ID"
+	form.add_child(privy_app_id_title)
 
-	_phantom_app_id_edit = LineEdit.new()
-	_phantom_app_id_edit.placeholder_text = "phantom-app-id"
-	_phantom_app_id_edit.text = _plugin_config.phantom_app_id
-	form.add_child(_phantom_app_id_edit)
+	_privy_app_id_edit = LineEdit.new()
+	_privy_app_id_edit.placeholder_text = "privy-app-id"
+	_privy_app_id_edit.text = _plugin_config.privy_app_id
+	form.add_child(_privy_app_id_edit)
 
-	var phantom_origin_title := Label.new()
-	phantom_origin_title.text = "Phantom Origin URL"
-	form.add_child(phantom_origin_title)
+	var privy_client_id_title := Label.new()
+	privy_client_id_title.text = "Privy Client ID"
+	form.add_child(privy_client_id_title)
 
-	_phantom_origin_url_edit = LineEdit.new()
-	_phantom_origin_url_edit.placeholder_text = "http://127.0.0.1:8000"
-	_phantom_origin_url_edit.text = _plugin_config.phantom_origin_url
-	form.add_child(_phantom_origin_url_edit)
+	_privy_client_id_edit = LineEdit.new()
+	_privy_client_id_edit.placeholder_text = "privy-client-id"
+	_privy_client_id_edit.text = _plugin_config.privy_client_id
+	form.add_child(_privy_client_id_edit)
 
-	var phantom_callback_title := Label.new()
-	phantom_callback_title.text = "Phantom Callback URL"
-	form.add_child(phantom_callback_title)
+	var privy_origin_title := Label.new()
+	privy_origin_title.text = "Privy Origin URL"
+	form.add_child(privy_origin_title)
 
-	_phantom_callback_url_edit = LineEdit.new()
-	_phantom_callback_url_edit.placeholder_text = "http://127.0.0.1:8000/auth/callback"
-	_phantom_callback_url_edit.text = _plugin_config.phantom_callback_url
-	form.add_child(_phantom_callback_url_edit)
+	_privy_origin_url_edit = LineEdit.new()
+	_privy_origin_url_edit.placeholder_text = "http://127.0.0.1:8000"
+	_privy_origin_url_edit.text = _plugin_config.privy_origin_url
+	form.add_child(_privy_origin_url_edit)
+
+	var privy_callback_title := Label.new()
+	privy_callback_title.text = "Privy Callback URL"
+	form.add_child(privy_callback_title)
+
+	_privy_callback_url_edit = LineEdit.new()
+	_privy_callback_url_edit.placeholder_text = "http://127.0.0.1:8000/auth/callback"
+	_privy_callback_url_edit.text = _plugin_config.privy_callback_url
+	form.add_child(_privy_callback_url_edit)
 
 	var pwa_title := Label.new()
 	pwa_title.text = "Enable PWA"
@@ -213,9 +224,10 @@ func _on_save_config_pressed() -> void:
 	_plugin_config.backend_url = _backend_url_edit.text.strip_edges()
 	_plugin_config.output_dir = _output_dir_edit.text.strip_edges()
 	_plugin_config.app_title = _app_title_edit.text.strip_edges()
-	_plugin_config.phantom_app_id = _phantom_app_id_edit.text.strip_edges()
-	_plugin_config.phantom_origin_url = _phantom_origin_url_edit.text.strip_edges()
-	_plugin_config.phantom_callback_url = _phantom_callback_url_edit.text.strip_edges()
+	_plugin_config.privy_app_id = _privy_app_id_edit.text.strip_edges()
+	_plugin_config.privy_client_id = _privy_client_id_edit.text.strip_edges()
+	_plugin_config.privy_origin_url = _privy_origin_url_edit.text.strip_edges()
+	_plugin_config.privy_callback_url = _privy_callback_url_edit.text.strip_edges()
 	_plugin_config.pwa_enabled = _pwa_enabled_check.button_pressed
 	_plugin_config.preset_name = GlideConstants.MANAGED_PRESET_NAME
 
@@ -230,16 +242,17 @@ func _on_save_config_pressed() -> void:
 	_save_plugin_config(_plugin_config)
 	_refresh_output_dir_label()
 	_set_lines([
-		"Config saved.",
-		"Backend URL: %s" % _plugin_config.backend_url,
-		"Output: %s" % _plugin_config.output_dir,
-		"App title: %s" % _plugin_config.app_title,
-		"Phantom App ID: %s" % _plugin_config.phantom_app_id,
-		"Phantom Origin URL: %s" % _get_phantom_origin_url(),
-		"Phantom Callback URL: %s" % _get_phantom_callback_url(),
-		"Shell HTML: %s" % GlideConstants.WEB_SHELL_HTML,
-		"PWA enabled: %s" % str(_plugin_config.pwa_enabled),
-	])
+			"Config saved.",
+			"Backend URL: %s" % _plugin_config.backend_url,
+			"Output: %s" % _plugin_config.output_dir,
+			"App title: %s" % _plugin_config.app_title,
+			"Privy App ID: %s" % _plugin_config.privy_app_id,
+			"Privy Client ID: %s" % _plugin_config.privy_client_id,
+			"Privy Origin URL: %s" % _get_privy_origin_url(),
+			"Privy Callback URL: %s" % _get_privy_callback_url(),
+			"Shell HTML: %s" % GlideConstants.WEB_SHELL_HTML,
+			"PWA enabled: %s" % str(_plugin_config.pwa_enabled),
+		])
 
 
 func _on_ping_shell_pressed() -> void:
@@ -335,6 +348,14 @@ func _validate_setup() -> Dictionary:
 		else:
 			errors += 1
 
+	var privy_check := _validate_privy_config()
+	messages.append(str(privy_check.get("message", "")))
+	if not privy_check.get("ok", false):
+		if str(privy_check.get("severity", "")) == "warning":
+			warnings += 1
+		else:
+			errors += 1
+
 	var summary := "Validation passed."
 	if errors > 0:
 		summary = "Validation failed."
@@ -374,8 +395,8 @@ func _validate_output_dir(messages: Array[String]) -> bool:
 
 	messages.append("INFO: Output path resolves to: %s" % absolute_path)
 	messages.append("INFO: Managed shell path: %s" % GlideConstants.WEB_SHELL_HTML)
-	messages.append("INFO: Phantom origin URL: %s" % _get_phantom_origin_url())
-	messages.append("INFO: Phantom callback URL: %s" % _get_phantom_callback_url())
+	messages.append("INFO: Privy origin URL: %s" % _get_privy_origin_url())
+	messages.append("INFO: Privy callback URL: %s" % _get_privy_callback_url())
 	return true
 
 
@@ -458,6 +479,34 @@ func _validate_managed_preset() -> Dictionary:
 		"ok": false,
 		"severity": "warning",
 		"message": "WARNING: Managed preset missing: %s" % GlideConstants.MANAGED_PRESET_NAME,
+	}
+
+
+func _validate_privy_config() -> Dictionary:
+	var app_id := ""
+	var client_id := ""
+	if _plugin_config:
+		app_id = _plugin_config.privy_app_id.strip_edges()
+		client_id = _plugin_config.privy_client_id.strip_edges()
+
+	if app_id.is_empty() and client_id.is_empty():
+		return {
+			"ok": true,
+			"severity": "info",
+			"message": "INFO: Privy credentials are blank. Glide will stay in mock auth mode.",
+		}
+
+	if app_id.is_empty() or client_id.is_empty():
+		return {
+			"ok": false,
+			"severity": "warning",
+			"message": "WARNING: Privy auth needs both Privy App ID and Privy Client ID. Current build would fall back to mock mode.",
+		}
+
+	return {
+		"ok": true,
+		"severity": "info",
+		"message": "OK: Privy App ID and Client ID are both configured.",
 	}
 
 
@@ -671,9 +720,10 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 	var app_title := _plugin_config.app_title.strip_edges()
 	if app_title.is_empty():
 		app_title = "Glide App"
-	var phantom_app_id := _plugin_config.phantom_app_id.strip_edges()
-	var phantom_origin_url := _get_phantom_origin_url()
-	var phantom_callback_url := _get_phantom_callback_url()
+	var privy_app_id := _plugin_config.privy_app_id.strip_edges()
+	var privy_client_id := _plugin_config.privy_client_id.strip_edges()
+	var privy_origin_url := _get_privy_origin_url()
+	var privy_callback_url := _get_privy_callback_url()
 
 	if not FileAccess.file_exists(output_file_absolute):
 		return {
@@ -704,18 +754,22 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 		app_title,
 		html.substr(title_end + 8),
 	]
-	updated_html = updated_html.replace(
-		'const glidePhantomAppId = "";',
-		'const glidePhantomAppId = %s;' % JSON.stringify(phantom_app_id)
-	)
-	updated_html = updated_html.replace(
-		'const glidePhantomOriginUrl = "";',
-		'const glidePhantomOriginUrl = %s;' % JSON.stringify(phantom_origin_url)
-	)
-	updated_html = updated_html.replace(
-		'const glidePhantomCallbackUrl = "";',
-		'const glidePhantomCallbackUrl = %s;' % JSON.stringify(phantom_callback_url)
-	)
+		updated_html = updated_html.replace(
+			'const glidePrivyAppId = "";',
+			'const glidePrivyAppId = %s;' % JSON.stringify(privy_app_id)
+		)
+		updated_html = updated_html.replace(
+			'const glidePrivyClientId = "";',
+			'const glidePrivyClientId = %s;' % JSON.stringify(privy_client_id)
+		)
+		updated_html = updated_html.replace(
+			'const glidePrivyOriginUrl = "";',
+			'const glidePrivyOriginUrl = %s;' % JSON.stringify(privy_origin_url)
+		)
+		updated_html = updated_html.replace(
+			'const glidePrivyCallbackUrl = "";',
+			'const glidePrivyCallbackUrl = %s;' % JSON.stringify(privy_callback_url)
+		)
 
 	file = FileAccess.open(output_file_absolute, FileAccess.WRITE)
 	if file == null:
@@ -727,7 +781,7 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 	file.store_string(updated_html)
 	file.close()
 
-	var callback_result := _write_phantom_callback_page(output_file_absolute, phantom_callback_url)
+	var callback_result := _write_privy_callback_page(output_file_absolute, privy_callback_url)
 	if not callback_result.get("ok", false):
 		return callback_result
 
@@ -735,20 +789,21 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 		"ok": true,
 		"lines": [
 			"Applied app title to exported HTML: %s" % app_title,
-			"Applied Phantom App ID to exported HTML: %s" % phantom_app_id,
-			"Applied Phantom origin URL to exported HTML: %s" % phantom_origin_url,
-			"Applied Phantom callback URL to exported HTML: %s" % phantom_callback_url,
-			"Generated Phantom callback page for: %s" % phantom_callback_url,
+			"Applied Privy App ID to exported HTML: %s" % privy_app_id,
+			"Applied Privy client ID to exported HTML: %s" % privy_client_id,
+			"Applied Privy origin URL to exported HTML: %s" % privy_origin_url,
+			"Applied Privy callback URL to exported HTML: %s" % privy_callback_url,
+			"Generated Privy callback page for: %s" % privy_callback_url,
 		],
 	}
 
 
-func _write_phantom_callback_page(output_file_absolute: String, phantom_callback_url: String) -> Dictionary:
-	var callback_path := phantom_callback_url.strip_edges()
+func _write_privy_callback_page(output_file_absolute: String, privy_callback_url: String) -> Dictionary:
+	var callback_path := privy_callback_url.strip_edges()
 	if callback_path.is_empty():
 		return {
 			"ok": true,
-			"lines": ["Skipped callback page generation because Phantom Callback URL is blank."],
+			"lines": ["Skipped callback page generation because Privy Callback URL is blank."],
 		}
 
 	var parsed_callback := _parse_callback_output_path(output_file_absolute, callback_path)
@@ -762,7 +817,7 @@ func _write_phantom_callback_page(output_file_absolute: String, phantom_callback
 		return {
 			"ok": false,
 			"lines": [
-				"Could not create Phantom callback directory: %s" % callback_dir_absolute,
+				"Could not create Privy callback directory: %s" % callback_dir_absolute,
 				"DirAccess error code: %d" % dir_error,
 			],
 		}
@@ -772,7 +827,7 @@ func _write_phantom_callback_page(output_file_absolute: String, phantom_callback
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Glide Phantom Callback</title>
+	<title>Glide Privy Callback</title>
 </head>
 <body>
 	<script>
@@ -789,7 +844,7 @@ func _write_phantom_callback_page(output_file_absolute: String, phantom_callback
 	if callback_file == null:
 		return {
 			"ok": false,
-			"lines": ["Could not open Phantom callback file for writing: %s" % callback_file_absolute],
+			"lines": ["Could not open Privy callback file for writing: %s" % callback_file_absolute],
 		}
 
 	callback_file.store_string(callback_html)
@@ -797,17 +852,17 @@ func _write_phantom_callback_page(output_file_absolute: String, phantom_callback
 
 	return {
 		"ok": true,
-		"lines": ["Generated Phantom callback file: %s" % callback_file_absolute],
+		"lines": ["Generated Privy callback file: %s" % callback_file_absolute],
 	}
 
 
-func _parse_callback_output_path(output_file_absolute: String, phantom_callback_url: String) -> Dictionary:
-	var callback_url := phantom_callback_url.strip_edges()
+func _parse_callback_output_path(output_file_absolute: String, callback_input_url: String) -> Dictionary:
+	var callback_url := callback_input_url.strip_edges()
 	var separator_index := callback_url.find("://")
 	if separator_index == -1:
 		return {
 			"ok": false,
-			"lines": ["Phantom Callback URL must include protocol, for example http://127.0.0.1:8000/auth/callback"],
+			"lines": ["Privy Callback URL must include protocol, for example http://127.0.0.1:8000/auth/callback"],
 		}
 
 	var path_start := callback_url.find("/", separator_index + 3)
@@ -831,7 +886,7 @@ func _parse_callback_output_path(output_file_absolute: String, phantom_callback_
 	if callback_segments.is_empty():
 		return {
 			"ok": false,
-			"lines": ["Phantom Callback URL path could not be parsed: %s" % phantom_callback_url],
+			"lines": ["Privy Callback URL path could not be parsed: %s" % callback_input_url],
 		}
 
 	var callback_file_absolute := base_output_dir
@@ -857,15 +912,16 @@ func _load_or_create_plugin_config() -> GlidePluginConfig:
 		var file := ConfigFile.new()
 		var load_error := file.load(GlideConstants.CONFIG_FILE_PATH)
 		if load_error == OK:
-			config.backend_url = str(file.get_value("glide", "backend_url", config.backend_url))
-			config.output_dir = str(file.get_value("glide", "output_dir", config.output_dir))
-			config.pwa_enabled = bool(file.get_value("glide", "pwa_enabled", config.pwa_enabled))
-			config.app_title = str(file.get_value("glide", "app_title", config.app_title))
-			config.phantom_app_id = str(file.get_value("glide", "phantom_app_id", config.phantom_app_id))
-			config.phantom_origin_url = str(file.get_value("glide", "phantom_origin_url", file.get_value("glide", "phantom_redirect_origin", config.phantom_origin_url)))
-			config.phantom_callback_url = str(file.get_value("glide", "phantom_callback_url", config.phantom_callback_url))
-			config.preset_name = str(file.get_value("glide", "preset_name", config.preset_name))
-			return config
+				config.backend_url = str(file.get_value("glide", "backend_url", config.backend_url))
+				config.output_dir = str(file.get_value("glide", "output_dir", config.output_dir))
+				config.pwa_enabled = bool(file.get_value("glide", "pwa_enabled", config.pwa_enabled))
+				config.app_title = str(file.get_value("glide", "app_title", config.app_title))
+				config.privy_app_id = str(file.get_value("glide", "privy_app_id", file.get_value("glide", "phantom_app_id", config.privy_app_id)))
+				config.privy_client_id = str(file.get_value("glide", "privy_client_id", config.privy_client_id))
+				config.privy_origin_url = str(file.get_value("glide", "privy_origin_url", file.get_value("glide", "phantom_origin_url", file.get_value("glide", "phantom_redirect_origin", config.privy_origin_url))))
+				config.privy_callback_url = str(file.get_value("glide", "privy_callback_url", file.get_value("glide", "phantom_callback_url", config.privy_callback_url)))
+				config.preset_name = str(file.get_value("glide", "preset_name", config.preset_name))
+				return config
 
 	_save_plugin_config(config)
 	return config
@@ -877,9 +933,10 @@ func _save_plugin_config(config: GlidePluginConfig) -> void:
 	file.set_value("glide", "output_dir", config.output_dir)
 	file.set_value("glide", "pwa_enabled", config.pwa_enabled)
 	file.set_value("glide", "app_title", config.app_title)
-	file.set_value("glide", "phantom_app_id", config.phantom_app_id)
-	file.set_value("glide", "phantom_origin_url", config.phantom_origin_url)
-	file.set_value("glide", "phantom_callback_url", config.phantom_callback_url)
+	file.set_value("glide", "privy_app_id", config.privy_app_id)
+	file.set_value("glide", "privy_client_id", config.privy_client_id)
+	file.set_value("glide", "privy_origin_url", config.privy_origin_url)
+	file.set_value("glide", "privy_callback_url", config.privy_callback_url)
 	file.set_value("glide", "preset_name", config.preset_name)
 
 	var config_dir_absolute := ProjectSettings.globalize_path(GlideConstants.CONFIG_DIR)
@@ -905,13 +962,13 @@ func _get_output_dir() -> String:
 	return GlideConstants.DEFAULT_OUTPUT_DIR
 
 
-func _get_phantom_origin_url() -> String:
-	if _plugin_config and not _plugin_config.phantom_origin_url.is_empty():
-		return _plugin_config.phantom_origin_url
+func _get_privy_origin_url() -> String:
+	if _plugin_config and not _plugin_config.privy_origin_url.is_empty():
+		return _plugin_config.privy_origin_url
 	return "http://127.0.0.1:8000"
 
 
-func _get_phantom_callback_url() -> String:
-	if _plugin_config and not _plugin_config.phantom_callback_url.is_empty():
-		return _plugin_config.phantom_callback_url
+func _get_privy_callback_url() -> String:
+	if _plugin_config and not _plugin_config.privy_callback_url.is_empty():
+		return _plugin_config.privy_callback_url
 	return "http://127.0.0.1:8000/auth/callback"

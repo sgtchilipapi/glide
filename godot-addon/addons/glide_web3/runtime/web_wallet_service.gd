@@ -13,6 +13,7 @@ func _init() -> void:
 	_js_bridge = GlideJsBridge.new()
 	_js_bridge.call_succeeded.connect(_on_js_call_succeeded)
 	_js_bridge.call_failed.connect(_on_js_call_failed)
+	_request_bridge_call("getLoginState", {})
 
 
 func login() -> void:
@@ -51,9 +52,11 @@ func _request_bridge_call(method_name: String, payload: Dictionary) -> void:
 func _on_js_call_succeeded(request_id: int, method_name: String, result: Variant) -> void:
 	_pending_requests.erase(request_id)
 
-	match method_name:
-		"login":
-			_handle_login_success(result)
+		match method_name:
+			"getLoginState":
+				_handle_login_state(result)
+			"login":
+				_handle_login_success(result)
 		"logout":
 			_logged_in = false
 			_wallet_address = ""
@@ -70,6 +73,8 @@ func _on_js_call_failed(request_id: int, method_name: String, error: Dictionary)
 
 func _handle_login_success(result: Variant) -> void:
 	var payload := _normalize_result_dictionary(result)
+	if payload.get("redirect_started", false):
+		return
 	if not payload.get("ok", false):
 		login_failed.emit({
 			"code": "login_failed",
@@ -80,6 +85,12 @@ func _handle_login_success(result: Variant) -> void:
 	_logged_in = true
 	_wallet_address = str(payload.get("address", ""))
 	login_success.emit(_wallet_address)
+
+
+func _handle_login_state(result: Variant) -> void:
+	var payload := _normalize_result_dictionary(result)
+	_logged_in = bool(payload.get("logged_in", false))
+	_wallet_address = str(payload.get("address", ""))
 
 
 func _emit_method_error(method_name: String, error: Dictionary) -> void:

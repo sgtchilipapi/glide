@@ -30,7 +30,7 @@ func _build_ui() -> void:
 	root.add_child(title)
 
 	var description := Label.new()
-	description.text = "Use this scene in a Web export to verify WalletService can log in through the mock shell."
+	description.text = "Use this scene in a Web export to verify WalletService login through Glide's active shell auth path."
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(description)
 

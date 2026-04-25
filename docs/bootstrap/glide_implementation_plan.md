@@ -1,6 +1,22 @@
 # Glide Product Implementation Plan
 ## Godot Embedded Wallet Web Export Toolkit — Vertical Slice Plan
 
+## Provider Migration Notice
+
+Active embedded auth provider:
+
+- Privy
+
+Legacy embedded auth provider:
+
+- Phantom
+- archived under `legacy/phantom/`
+
+Interpretation rule for this plan:
+
+- active implementation work should target Privy
+- any older Phantom-specific references below are historical unless explicitly reactivated
+
 ## Context
 
 This plan is for building a **Godot addon product** that lets a Godot developer:
@@ -9,7 +25,7 @@ This plan is for building a **Godot addon product** that lets a Godot developer:
 - configure a Web export preset managed by the product,
 - export a Godot game to Web using a **custom HTML shell**,
 - wrap the exported game in a **TypeScript/JavaScript shell**,
-- use **Phantom embedded wallet** integration through that shell,
+- use **Privy embedded wallet** integration through that shell,
 - call a clean Godot-side API from gameplay code,
 - avoid external wallet extension popups,
 - optionally package the result as a PWA.
@@ -30,7 +46,7 @@ This plan is for building a **Godot addon product** that lets a Godot developer:
 ### Scope of v1
 
 - Web export only
-- Phantom embedded wallet only
+- Privy embedded wallet only
 - No multi-provider abstraction
 - No native mobile plugins
 - One managed Web preset only
@@ -123,7 +139,7 @@ Recommended repo layout:
     index.html
     /src
       walletBridge.ts
-      phantom.ts
+      privy.ts
       godotBoot.ts
       env.ts
       types.ts
@@ -154,8 +170,8 @@ Recommended repo layout:
 ## Slice 4 — WalletService runtime API + mock end-to-end login flow
 **Outcome:** Gameplay code can call a stable Godot API, backed by mock shell behavior.
 
-## Slice 5 — Phantom embedded login integration
-**Outcome:** Real Phantom embedded login flow can be triggered from the shell.
+## Slice 5 — Privy embedded login integration
+**Outcome:** Real Privy embedded login flow can be triggered from the shell.
 
 ## Slice 6 — Wallet address/session state returned to Godot
 **Outcome:** Godot runtime can receive real session state and address data.
@@ -632,7 +648,7 @@ Make preset management visible.
 
 ## Slice goal
 
-Freeze the Godot-side runtime API before real Phantom integration.
+Freeze the Godot-side runtime API before real embedded-provider integration.
 
 ## Work Order 4.1 — Create `WalletService` interface
 
@@ -717,11 +733,11 @@ Prove product can be used from game code.
 
 ---
 
-# Slice 5 — Phantom embedded login integration
+# Slice 5 — Privy embedded login integration
 
 ## Slice goal
 
-Replace mock login with real Phantom embedded auth.
+Replace mock login with real Privy embedded auth.
 
 ## Work Order 5.1 — Add web shell environment/config structure
 
@@ -730,51 +746,51 @@ Prepare shell for real provider config.
 
 ### Instructions
 Support:
-- Phantom app/client config
+- Privy app/client config
 - redirect/origin config if needed
 - dev vs prod mode
 
 ---
 
-## Work Order 5.2 — Install Phantom shell dependencies
+## Work Order 5.2 — Install Privy shell dependencies
 
 ### Objective
 Integrate actual provider SDK in web shell project.
 
 ### Instructions
-- add Phantom embedded auth dependencies
-- build minimal provider wrapper module, e.g. `phantom.ts`
+- add Privy embedded auth dependencies
+- build minimal provider wrapper module, e.g. `privy.ts`
 
 ---
 
 ## Work Order 5.3 — Create provider wrapper boundary
 
 ### Objective
-Prevent Phantom SDK from leaking across shell.
+Prevent Privy SDK from leaking across shell.
 
 ### Instructions
 - create shell-local wrapper:
-  - `phantomLogin()`
-  - `phantomLogout()`
-  - `phantomGetAddress()`
+  - `privyLogin()`
+  - `privyLogout()`
+  - `privyGetAddress()`
 
 ### Acceptance criteria
-- `walletBridge.ts` talks to `phantom.ts`, not raw SDK calls all over the shell
+- `walletBridge.ts` talks to `privy.ts`, not raw SDK calls all over the shell
 
 ---
 
 ## Work Order 5.4 — Replace mock login implementation
 
 ### Objective
-Use real Phantom embedded flow.
+Use real Privy embedded flow.
 
 ### Acceptance criteria
-- shell login method now delegates to Phantom embedded login
+- shell login method now delegates to Privy embedded login
 - mock code removed or gated behind debug mode
 
 ---
 
-## Work Order 5.5 — Manual Phantom login test
+## Work Order 5.5 — Manual Privy login test
 
 ### Manual test
 1. Build product
@@ -782,7 +798,7 @@ Use real Phantom embedded flow.
 3. Export
 4. Open app in supported browser
 5. Trigger login from demo scene
-6. Complete Phantom embedded flow
+6. Complete Privy embedded flow
 7. Confirm no extension popup dependency
 8. Confirm login completes
 
@@ -974,8 +990,8 @@ Show:
 
 # Cross-Slice Rules
 
-## Rule 1 — No direct gameplay dependence on Phantom
-Gameplay code must call `WalletService`, never Phantom APIs or raw bridge functions.
+## Rule 1 — No direct gameplay dependence on provider SDKs
+Gameplay code must call `WalletService`, never provider SDK APIs or raw bridge functions.
 
 ## Rule 2 — No scattered JavaScriptBridge calls
 All JS interop must go through one Godot bridge helper and/or WebWalletService.
@@ -1077,10 +1093,10 @@ v1 is done when a third-party Godot developer can:
 
 1. install the addon,
 2. enable the plugin,
-3. configure Phantom + output settings,
+3. configure Privy + output settings,
 4. click Build Web or Build PWA,
 5. run the exported app,
-6. trigger Phantom embedded login from inside the game through WalletService,
+6. trigger Privy embedded login from inside the game through WalletService,
 7. receive wallet address/session state in Godot,
 8. use the documented transaction handoff path,
 9. do all of the above without manually wiring the HTML shell or JS bridge themselves.

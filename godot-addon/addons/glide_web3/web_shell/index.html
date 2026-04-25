@@ -60,23 +60,25 @@
 		</canvas>
 	</div>
 
-	<script>
-		const glidePhantomAppId = "";
-		const glidePhantomOriginUrl = "";
-		const glidePhantomCallbackUrl = "";
-		window.__glideEnv = {
-			provider: {
-				name: "phantom_embedded",
-				mode: glidePhantomAppId ? "phantom_browser_sdk" : "mock"
-			},
-			phantom: {
-				clientId: "",
-				appId: glidePhantomAppId,
-				originUrl: glidePhantomOriginUrl || window.location.origin,
-				callbackUrl: glidePhantomCallbackUrl || (window.location.origin + "/auth/callback")
-			},
-			backend: {
-				url: ""
+		<script>
+			const glidePrivyAppId = "";
+			const glidePrivyClientId = "";
+			const glidePrivyOriginUrl = "";
+			const glidePrivyCallbackUrl = "";
+			window.__glideEnv = {
+				provider: {
+					name: "privy_embedded",
+					mode: glidePrivyAppId && glidePrivyClientId ? "privy" : "mock",
+					oauthProvider: "google"
+				},
+				privy: {
+					appId: glidePrivyAppId,
+					clientId: glidePrivyClientId,
+					originUrl: glidePrivyOriginUrl || window.location.origin,
+					callbackUrl: glidePrivyCallbackUrl || (window.location.origin + "/auth/callback")
+				},
+				backend: {
+					url: ""
 			},
 			runtime: {
 				appTitle: document.title,
@@ -84,25 +86,32 @@
 			}
 		};
 	</script>
-	<script src="bridge.js"></script>
-	<script src="$GODOT_URL"></script>
-	<script>
-		(function () {
-			const status = document.getElementById("glide-shell-status");
-			const bridgeReady = !!(window.glideWallet && typeof window.glideWallet.ping === "function");
-			window.__glideBridgeReady = bridgeReady;
+		<script src="bridge.js"></script>
+		<script src="$GODOT_URL"></script>
+		<script>
+			(function () {
+				const status = document.getElementById("glide-shell-status");
+				if (!(window.glideWallet && typeof window.glideWallet.ping === "function")) {
+					window.__glideBridgeReady = false;
+					status.textContent = "Bridge: missing";
+					console.error("[Glide Web3] bridge.js did not initialize window.glideWallet before Godot boot");
+					return;
+				}
 
-			if (!bridgeReady) {
-				status.textContent = "Bridge: missing";
-				console.error("[Glide Web3] bridge.js did not initialize window.glideWallet before Godot boot");
-				return;
-			}
-
-			status.textContent = "Bridge: ready";
-			console.log("[Glide Web3] shell env", window.__glideEnv);
-			const engine = new Engine($GODOT_CONFIG);
-			engine.startGame();
-		}());
-	</script>
-</body>
+				Promise.resolve(window.glideWallet.ping())
+					.then(function () {
+						window.__glideBridgeReady = true;
+						status.textContent = "Bridge: ready";
+						console.log("[Glide Web3] shell env", window.__glideEnv);
+						const engine = new Engine($GODOT_CONFIG);
+						engine.startGame();
+					})
+					.catch(function (error) {
+						window.__glideBridgeReady = false;
+						status.textContent = "Bridge: error";
+						console.error("[Glide Web3] bridge initialization failed before Godot boot", error);
+					});
+			}());
+		</script>
+	</body>
 </html>

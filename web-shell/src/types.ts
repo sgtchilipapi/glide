@@ -1,20 +1,26 @@
-export type GlideProviderMode = "mock" | "phantom_browser_sdk";
+export type GlideProviderMode = "mock" | "privy";
 
 export type GlideAuthProvider =
   | "google"
   | "apple"
-  | "phantom"
-  | "injected"
-  | "deeplink";
+  | "twitter"
+  | "github"
+  | "discord"
+  | "linkedin"
+  | "spotify"
+  | "tiktok"
+  | "instagram"
+  | "line";
 
 export interface GlideShellEnv {
   provider: {
     name: string;
     mode: GlideProviderMode;
+    oauthProvider: GlideAuthProvider;
   };
-  phantom: {
-    clientId: string;
+  privy: {
     appId: string;
+    clientId: string;
     originUrl: string;
     callbackUrl: string;
   };
@@ -30,6 +36,7 @@ export interface GlideShellEnv {
 export interface GlideWalletBridge {
   ping(): Promise<Record<string, unknown>>;
   getShellEnv(): Promise<Record<string, unknown>>;
+  getLoginState(): Promise<Record<string, unknown>>;
   login(): Promise<Record<string, unknown>>;
   logout(): Promise<Record<string, unknown>>;
   isLoggedIn(): Promise<Record<string, unknown>>;

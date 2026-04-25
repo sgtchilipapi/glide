@@ -71,7 +71,7 @@ Not part of 2.1:
 - logout
 - wallet address retrieval
 - transaction signing
-- Phantom SDK calls from Godot
+- provider SDK calls from Godot
 
 Those come in later slice items.
 
