@@ -31,7 +31,7 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
     },
 
     async login() {
-      if (!canUseEmbeddedPhantom(env)) {
+      if (env.provider.mode === "mock") {
         loggedIn = true;
         walletAddress = "MOCK_ADDRESS_001";
         return {
@@ -43,14 +43,25 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
         };
       }
 
-      const result = await connectWithPhantom(getSdk(), getDefaultLoginProvider());
-      loggedIn = true;
-      walletAddress = String(result.address ?? "");
-      return {
-        ...result,
-        source: "phantom_browser_sdk",
-        provider_mode: env.provider.mode,
-      };
+      if (!canUseEmbeddedPhantom(env)) {
+        throw {
+          code: "misconfigured",
+          message: "Phantom Browser SDK mode requires a valid Phantom appId.",
+        };
+      }
+
+      try {
+        const result = await connectWithPhantom(getSdk(), getDefaultLoginProvider());
+        loggedIn = true;
+        walletAddress = String(result.address ?? "");
+        return {
+          ...result,
+          source: "phantom_browser_sdk",
+          provider_mode: env.provider.mode,
+        };
+      } catch (error) {
+        throw normalizePhantomError(error);
+      }
     },
 
     async logout() {
@@ -86,5 +97,54 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
         request_payload: payload,
       };
     },
+  };
+}
+
+function normalizePhantomError(error: unknown): Record<string, unknown> {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : JSON.stringify(error);
+
+  const normalizedMessage = message.toLowerCase();
+
+  if (
+    normalizedMessage.includes("cancel") ||
+    normalizedMessage.includes("denied") ||
+    normalizedMessage.includes("closed")
+  ) {
+    return {
+      code: "cancelled",
+      message,
+    };
+  }
+
+  if (
+    normalizedMessage.includes("appid") ||
+    normalizedMessage.includes("redirect") ||
+    normalizedMessage.includes("config")
+  ) {
+    return {
+      code: "misconfigured",
+      message,
+    };
+  }
+
+  if (
+    normalizedMessage.includes("network") ||
+    normalizedMessage.includes("unavailable") ||
+    normalizedMessage.includes("unsupported")
+  ) {
+    return {
+      code: "unavailable",
+      message,
+    };
+  }
+
+  return {
+    code: "unknown",
+    message,
   };
 }

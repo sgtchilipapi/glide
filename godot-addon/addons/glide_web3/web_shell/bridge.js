@@ -35711,7 +35711,7 @@ Please ensure the transaction object includes required fields (to, value, chainI
         };
       },
       async login() {
-        if (!canUseEmbeddedPhantom(env2)) {
+        if (env2.provider.mode === "mock") {
           loggedIn = true;
           walletAddress = "MOCK_ADDRESS_001";
           return {
@@ -35722,14 +35722,24 @@ Please ensure the transaction object includes required fields (to, value, chainI
             provider_mode: env2.provider.mode
           };
         }
-        const result = await connectWithPhantom(getSdk(), getDefaultLoginProvider());
-        loggedIn = true;
-        walletAddress = String(result.address ?? "");
-        return {
-          ...result,
-          source: "phantom_browser_sdk",
-          provider_mode: env2.provider.mode
-        };
+        if (!canUseEmbeddedPhantom(env2)) {
+          throw {
+            code: "misconfigured",
+            message: "Phantom Browser SDK mode requires a valid Phantom appId."
+          };
+        }
+        try {
+          const result = await connectWithPhantom(getSdk(), getDefaultLoginProvider());
+          loggedIn = true;
+          walletAddress = String(result.address ?? "");
+          return {
+            ...result,
+            source: "phantom_browser_sdk",
+            provider_mode: env2.provider.mode
+          };
+        } catch (error) {
+          throw normalizePhantomError(error);
+        }
       },
       async logout() {
         if (sdk) {
@@ -35761,6 +35771,32 @@ Please ensure the transaction object includes required fields (to, value, chainI
           request_payload: payload
         };
       }
+    };
+  }
+  function normalizePhantomError(error) {
+    const message = error instanceof Error ? error.message : typeof error === "string" ? error : JSON.stringify(error);
+    const normalizedMessage = message.toLowerCase();
+    if (normalizedMessage.includes("cancel") || normalizedMessage.includes("denied") || normalizedMessage.includes("closed")) {
+      return {
+        code: "cancelled",
+        message
+      };
+    }
+    if (normalizedMessage.includes("appid") || normalizedMessage.includes("redirect") || normalizedMessage.includes("config")) {
+      return {
+        code: "misconfigured",
+        message
+      };
+    }
+    if (normalizedMessage.includes("network") || normalizedMessage.includes("unavailable") || normalizedMessage.includes("unsupported")) {
+      return {
+        code: "unavailable",
+        message
+      };
+    }
+    return {
+      code: "unknown",
+      message
     };
   }
 

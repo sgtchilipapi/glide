@@ -61,14 +61,15 @@
 	</div>
 
 	<script>
+		const glidePhantomAppId = "";
 		window.__glideEnv = {
 			provider: {
 				name: "phantom_embedded",
-				mode: "mock"
+				mode: glidePhantomAppId ? "phantom_browser_sdk" : "mock"
 			},
 			phantom: {
 				clientId: "",
-				appId: "",
+				appId: glidePhantomAppId,
 				redirectOrigin: window.location.origin
 			},
 			backend: {
