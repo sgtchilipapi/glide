@@ -95,6 +95,7 @@ For this repository's current local development loop, every implementation itera
 - Prefer the verified regular Godot executable above for automation.
 - Do not rely on `Godot_v4.6.2-stable_win64_console.exe` for automation in this environment because it hit Windows elevation error `740`.
 - Do not rely on opening exported Web builds with `file://` paths for runtime testing. Serve them over local HTTP.
+- For any third-party dependency, SDK selection, install command, or integration detail, verify against the current official vendor documentation first before answering, implementing, or instructing installation.
 - This local workflow is an implementation/testing convenience for this machine and does not change the product requirements for end users.
 
 ---
