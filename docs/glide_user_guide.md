@@ -33,7 +33,6 @@ Current implemented scope:
 
 Not implemented yet:
 - automatic preset creation
-- Phantom login flow
 - PWA packaging
 
 ## Current Requirements
@@ -227,6 +226,35 @@ provider.mode = mock
 
 This is preparation for real Phantom SDK wiring in Slice 5.
 
+## Phantom Browser SDK Path
+
+The shell toolchain now uses:
+
+```text
+@phantom/browser-sdk
+```
+
+Current structure:
+- `web-shell/src/types.ts`
+- `web-shell/src/phantom.ts`
+- `web-shell/src/walletBridge.ts`
+- `web-shell/src/index.ts`
+
+Current live addon shell bridge is bundled from that toolchain into:
+
+```text
+addons/glide_web3/web_shell/bridge.js
+```
+
+Behavior:
+- `mock` mode stays available for local development
+- `phantom_browser_sdk` mode is gated behind a non-empty Phantom `appId`
+- real-mode failures are normalized to:
+  - `cancelled`
+  - `misconfigured`
+  - `unavailable`
+  - `unknown`
+
 ## Standalone Web Shell Tooling
 
 The repository now includes:
@@ -352,6 +380,21 @@ Address: MOCK_ADDRESS_001
 
 The scene uses `WebWalletService`, not direct bridge calls.
 
+## Slice 5 Real Phantom Login Test
+
+Before a real Phantom login test can pass, you need:
+
+1. a real Phantom App ID
+2. a redirect origin/url allowlisted in Phantom Portal
+3. the shell env configured with that App ID instead of the current blank placeholder
+
+Current code path:
+- if Phantom mode is `mock`, login returns the mock address
+- if Phantom mode is `phantom_browser_sdk` with no valid `appId`, login returns `misconfigured`
+- if Phantom mode is `phantom_browser_sdk` with valid app config, the bundled bridge delegates to Phantom Browser SDK
+
+So the real embedded-login code path is implemented, but final manual validation is blocked until real Phantom app configuration is provided.
+
 Shell files:
 - `addons/glide_web3/web_shell/index.html`
 - `addons/glide_web3/web_shell/bridge.js`
@@ -359,7 +402,7 @@ Shell files:
 ## Current Development Status
 
 Completed up to:
-- Slice 5.2 Phantom shell dependency setup
+- Slice 5 implementation complete except final real-provider manual validation
 
 Next planned item:
-- Slice 5.3 Phantom provider wrapper boundary
+- provide Phantom app configuration for final real-login validation, or continue to Slice 6
