@@ -52,11 +52,11 @@ func _request_bridge_call(method_name: String, payload: Dictionary) -> void:
 func _on_js_call_succeeded(request_id: int, method_name: String, result: Variant) -> void:
 	_pending_requests.erase(request_id)
 
-		match method_name:
-			"getLoginState":
-				_handle_login_state(result)
-			"login":
-				_handle_login_success(result)
+	match method_name:
+		"getLoginState":
+			_handle_login_state(result)
+		"login":
+			_handle_login_success(result)
 		"logout":
 			_logged_in = false
 			_wallet_address = ""
