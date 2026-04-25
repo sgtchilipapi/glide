@@ -15,6 +15,8 @@ var _shell_path_label: Label
 var _backend_url_edit: LineEdit
 var _output_dir_edit: LineEdit
 var _app_title_edit: LineEdit
+var _phantom_app_id_edit: LineEdit
+var _phantom_redirect_origin_edit: LineEdit
 var _pwa_enabled_check: CheckBox
 var _plugin_config: GlidePluginConfig
 
@@ -41,6 +43,8 @@ func _exit_tree() -> void:
 		_backend_url_edit = null
 		_output_dir_edit = null
 		_app_title_edit = null
+		_phantom_app_id_edit = null
+		_phantom_redirect_origin_edit = null
 		_pwa_enabled_check = null
 		_plugin_config = null
 	print("%s plugin disabled." % GlideConstants.PLUGIN_NAME)
@@ -109,6 +113,24 @@ func _build_panel_ui() -> void:
 	_app_title_edit.placeholder_text = "Glide App"
 	_app_title_edit.text = _plugin_config.app_title
 	form.add_child(_app_title_edit)
+
+	var phantom_app_id_title := Label.new()
+	phantom_app_id_title.text = "Phantom App ID"
+	form.add_child(phantom_app_id_title)
+
+	_phantom_app_id_edit = LineEdit.new()
+	_phantom_app_id_edit.placeholder_text = "phantom-app-id"
+	_phantom_app_id_edit.text = _plugin_config.phantom_app_id
+	form.add_child(_phantom_app_id_edit)
+
+	var phantom_redirect_title := Label.new()
+	phantom_redirect_title.text = "Phantom Redirect"
+	form.add_child(phantom_redirect_title)
+
+	_phantom_redirect_origin_edit = LineEdit.new()
+	_phantom_redirect_origin_edit.placeholder_text = "https://example.com"
+	_phantom_redirect_origin_edit.text = _plugin_config.phantom_redirect_origin
+	form.add_child(_phantom_redirect_origin_edit)
 
 	var pwa_title := Label.new()
 	pwa_title.text = "Enable PWA"
@@ -180,6 +202,8 @@ func _on_save_config_pressed() -> void:
 	_plugin_config.backend_url = _backend_url_edit.text.strip_edges()
 	_plugin_config.output_dir = _output_dir_edit.text.strip_edges()
 	_plugin_config.app_title = _app_title_edit.text.strip_edges()
+	_plugin_config.phantom_app_id = _phantom_app_id_edit.text.strip_edges()
+	_plugin_config.phantom_redirect_origin = _phantom_redirect_origin_edit.text.strip_edges()
 	_plugin_config.pwa_enabled = _pwa_enabled_check.button_pressed
 	_plugin_config.preset_name = GlideConstants.MANAGED_PRESET_NAME
 
@@ -198,6 +222,8 @@ func _on_save_config_pressed() -> void:
 		"Backend URL: %s" % _plugin_config.backend_url,
 		"Output: %s" % _plugin_config.output_dir,
 		"App title: %s" % _plugin_config.app_title,
+		"Phantom App ID: %s" % _plugin_config.phantom_app_id,
+		"Phantom Redirect: %s" % _get_phantom_redirect_origin(),
 		"Shell HTML: %s" % GlideConstants.WEB_SHELL_HTML,
 		"PWA enabled: %s" % str(_plugin_config.pwa_enabled),
 	])
@@ -335,6 +361,7 @@ func _validate_output_dir(messages: Array[String]) -> bool:
 
 	messages.append("INFO: Output path resolves to: %s" % absolute_path)
 	messages.append("INFO: Managed shell path: %s" % GlideConstants.WEB_SHELL_HTML)
+	messages.append("INFO: Phantom redirect origin: %s" % _get_phantom_redirect_origin())
 	return true
 
 
@@ -630,6 +657,8 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 	var app_title := _plugin_config.app_title.strip_edges()
 	if app_title.is_empty():
 		app_title = "Glide App"
+	var phantom_app_id := _plugin_config.phantom_app_id.strip_edges()
+	var phantom_redirect_origin := _get_phantom_redirect_origin()
 
 	if not FileAccess.file_exists(output_file_absolute):
 		return {
@@ -660,6 +689,14 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 		app_title,
 		html.substr(title_end + 8),
 	]
+	updated_html = updated_html.replace(
+		'const glidePhantomAppId = "";',
+		'const glidePhantomAppId = %s;' % JSON.stringify(phantom_app_id)
+	)
+	updated_html = updated_html.replace(
+		"redirectOrigin: window.location.origin",
+		"redirectOrigin: %s" % JSON.stringify(phantom_redirect_origin)
+	)
 
 	file = FileAccess.open(output_file_absolute, FileAccess.WRITE)
 	if file == null:
@@ -673,7 +710,11 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 
 	return {
 		"ok": true,
-		"lines": ["Applied app title to exported HTML: %s" % app_title],
+		"lines": [
+			"Applied app title to exported HTML: %s" % app_title,
+			"Applied Phantom App ID to exported HTML: %s" % phantom_app_id,
+			"Applied Phantom redirect origin to exported HTML: %s" % phantom_redirect_origin,
+		],
 	}
 
 
@@ -690,6 +731,8 @@ func _load_or_create_plugin_config() -> GlidePluginConfig:
 			config.output_dir = str(file.get_value("glide", "output_dir", config.output_dir))
 			config.pwa_enabled = bool(file.get_value("glide", "pwa_enabled", config.pwa_enabled))
 			config.app_title = str(file.get_value("glide", "app_title", config.app_title))
+			config.phantom_app_id = str(file.get_value("glide", "phantom_app_id", config.phantom_app_id))
+			config.phantom_redirect_origin = str(file.get_value("glide", "phantom_redirect_origin", config.phantom_redirect_origin))
 			config.preset_name = str(file.get_value("glide", "preset_name", config.preset_name))
 			return config
 
@@ -703,6 +746,8 @@ func _save_plugin_config(config: GlidePluginConfig) -> void:
 	file.set_value("glide", "output_dir", config.output_dir)
 	file.set_value("glide", "pwa_enabled", config.pwa_enabled)
 	file.set_value("glide", "app_title", config.app_title)
+	file.set_value("glide", "phantom_app_id", config.phantom_app_id)
+	file.set_value("glide", "phantom_redirect_origin", config.phantom_redirect_origin)
 	file.set_value("glide", "preset_name", config.preset_name)
 
 	var config_dir_absolute := ProjectSettings.globalize_path(GlideConstants.CONFIG_DIR)
@@ -726,3 +771,9 @@ func _get_output_dir() -> String:
 	if _plugin_config and not _plugin_config.output_dir.is_empty():
 		return _plugin_config.output_dir
 	return GlideConstants.DEFAULT_OUTPUT_DIR
+
+
+func _get_phantom_redirect_origin() -> String:
+	if _plugin_config and not _plugin_config.phantom_redirect_origin.is_empty():
+		return _plugin_config.phantom_redirect_origin
+	return "http://127.0.0.1:8000"

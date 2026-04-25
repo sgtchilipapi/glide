@@ -2,6 +2,6 @@
 
 Glide is a toolkit for building wallet-enabled web games for the Godot game engine.
 
-Current status: Slice 5 implementation is in place through the Phantom browser SDK wrapper, live bundled shell bridge, and structured login error handling. Final real-provider validation still requires a real Phantom App ID and allowed redirect origin.
+Current status: Glide now has product-managed Phantom config fields in the plugin, and the build path injects those values into the shell env. Final real-provider validation still requires a real Phantom App ID and allowed redirect origin.
 
-Next checkpoint: provide real Phantom app configuration to complete the manual embedded-login validation, or move to Slice 6 if you want to continue code-first.
+Next checkpoint: enter real Phantom app configuration in Glide and run the manual embedded-login validation.

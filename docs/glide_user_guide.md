@@ -334,6 +334,8 @@ Current panel config controls:
 - `Backend URL`
 - `Output Dir`
 - `App Title`
+- `Phantom App ID`
+- `Phantom Redirect`
 - `Enable PWA`
 - `Save Config`
 
@@ -394,6 +396,20 @@ Current code path:
 - if Phantom mode is `phantom_browser_sdk` with valid app config, the bundled bridge delegates to Phantom Browser SDK
 
 So the real embedded-login code path is implemented, but final manual validation is blocked until real Phantom app configuration is provided.
+
+## Product-Managed Phantom Config
+
+Glide now exposes Phantom config in the plugin UI.
+
+Current fields:
+- `Phantom App ID`
+- `Phantom Redirect`
+
+Behavior:
+- values persist in `glide/glide_plugin_config.cfg`
+- build rewrites the exported shell env with those values
+- shell mode becomes `phantom_browser_sdk` when `Phantom App ID` is non-empty
+- otherwise shell stays in `mock` mode
 
 Shell files:
 - `addons/glide_web3/web_shell/index.html`
