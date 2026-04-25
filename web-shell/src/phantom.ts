@@ -24,7 +24,7 @@ export function getAllowedProviders(): GlideAuthProvider[] {
 }
 
 export function getDefaultLoginProvider(): GlideAuthProvider {
-  return "phantom";
+  return "google";
 }
 
 export async function connectWithPhantom(

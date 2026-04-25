@@ -35672,7 +35672,7 @@ Please ensure the transaction object includes required fields (to, value, chainI
     return ["phantom", "google", "apple", "injected", "deeplink"];
   }
   function getDefaultLoginProvider() {
-    return "phantom";
+    return "google";
   }
   async function connectWithPhantom(sdk, provider) {
     const result = await sdk.connect({ provider });
