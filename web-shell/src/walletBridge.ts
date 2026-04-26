@@ -1,5 +1,10 @@
 import type Privy from "@privy-io/js-sdk-core";
 import {
+  completeSponsoredAction,
+  isBackendSponsoredActionPayload,
+  prepareSponsoredAction,
+} from "./backend";
+import {
   beginPrivyLogin,
   canUsePrivy,
   completePrivyOAuthCallback,
@@ -289,6 +294,42 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
       }
 
       try {
+        if (isBackendSponsoredActionPayload(payload)) {
+          logBridge("backend_sponsored_prepare_start", {
+            requestId: payload.request_id,
+            action: payload.action,
+          });
+          const prepared = await prepareSponsoredAction(env, payload);
+          logBridge("backend_sponsored_prepare_done", {
+            requestId: prepared.request_id,
+            transactionKind: prepared.transaction?.kind,
+          });
+          const signed = await signAndSendPrivySolanaTransaction(
+            getClient(),
+            prepared.transaction,
+          );
+          const completed = await completeSponsoredAction(env, {
+            request_id: prepared.request_id,
+            wallet_address: signed.walletAddress,
+            signature: signed.signature,
+            chain: "solana",
+          });
+          logBridge("backend_sponsored_complete_done", {
+            requestId: completed.request_id,
+            status: completed.status,
+            signature: signed.signature,
+          });
+          return {
+            ok: true,
+            request_id: prepared.request_id,
+            signature: signed.signature,
+            address: signed.walletAddress,
+            provider_mode: env.provider.mode,
+            source: "backend_sponsored_action",
+            backend_status: completed.status,
+          };
+        }
+
         const result = await signAndSendPrivySolanaTransaction(getClient(), payload);
         logBridge("sign_and_send_transaction_done", {
           signature: result.signature,

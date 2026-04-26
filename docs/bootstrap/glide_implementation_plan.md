@@ -35,7 +35,7 @@ This plan is for building a **Godot addon product** that lets a Godot developer:
 - **Godot addon/plugin** = written in **GDScript**
 - **Web shell** = written in **TypeScript**, compiled to JavaScript
 - **Bridge** = Godot `JavaScriptBridge` on the Godot side, `window.glideWallet` on the JS side
-- **Backend** = external system, not implemented in v1 of this product, but the product must support backend URLs and payload handoff
+- **Backend** = authority for sponsored transaction preparation and verification; Glide v1 must support backend URLs and payload handoff without bundling backend infrastructure into the addon product
 
 ### Core principle
 
@@ -177,10 +177,10 @@ Recommended repo layout:
 **Outcome:** Godot runtime can receive real session state and address data.
 
 ## Slice 7 — Transaction handoff contract + mock transaction flow
-**Outcome:** Godot can send a transaction payload to the shell and receive a structured result.
+**Outcome:** Godot can send a canonical transaction request to the shell and receive a structured result, but the slice exists only to prove the low-level bridge contract that the backend-sponsored flow will use.
 
 ## Slice 8 — Backend-aware transaction preparation contract
-**Outcome:** Product supports backend URL configuration and a documented handoff path for backend-prepared payloads.
+**Outcome:** Product supports backend URL configuration and a documented sponsored-transaction handoff contract.
 
 ## Slice 9 — PWA packaging layer
 **Outcome:** Exported app is installable as a PWA.
@@ -848,11 +848,11 @@ After real login, Godot sees real session state.
 
 ---
 
-# Slice 7 — Transaction handoff contract + mock transaction flow
+# Slice 7 — Low-level transaction handoff contract
 
 ## Slice goal
 
-Define and test the transaction path before backend integration is finalized.
+Define and test the low-level transaction payload contract that the backend-sponsored flow will use.
 
 ## Work Order 7.1 — Define transaction payload schema
 
@@ -868,10 +868,10 @@ Define minimal schema:
 
 ## Work Order 7.2 — Add `signAndSendTransaction()` to shell bridge
 
-## Work Order 7.3 — Add mock tx implementation
+## Work Order 7.3 — Add debug/mock tx implementation
 
 ### Objective
-Return fake tx result first.
+Return a fake or local-only tx result so the bridge contract can be tested independently of the backend.
 
 ---
 
@@ -891,41 +891,43 @@ Test runtime tx path via WalletService.
 
 ---
 
-# Slice 8 — Backend-aware transaction preparation contract
+# Slice 8 — Backend-sponsored transaction flow
 
 ## Slice goal
 
-Add the backend-facing configuration and documented handoff needed for real game flows.
+Make the real product flow explicit: users authenticate with embedded wallets, then the backend prepares and/or sponsors user transactions.
 
 ## Work Order 8.1 — Add backend URL config to plugin UI and shell build config
 
-## Work Order 8.2 — Define backend request/response contract doc
+## Work Order 8.2 — Define sponsored-transaction backend request/response contract doc
 
 ### Must describe
-- how game asks backend for tx payload
-- what payload shape shell expects
+- how gameplay or shell asks backend to prepare a sponsored action
+- how backend identifies the authenticated user/wallet
+- what payload shape shell expects from backend
 - what backend verifies after tx
+- what response shape Godot receives after completion
 
 ---
 
-## Work Order 8.3 — Add optional fetch helper in shell
+## Work Order 8.3 — Add shell fetch helper for backend-sponsored actions
 
 ### Objective
-Keep backend comms in shell layer if needed for product demos/tools
+Keep backend comms in the shell layer so gameplay code never directly handles provider auth tokens or transaction serialization.
 
 ---
 
 ## Work Order 8.4 — Add demo backend integration mode flag
 
 ### Objective
-Allow mock vs backend-driven mode
+Allow mock/debug vs backend-sponsored mode
 
 ---
 
 ## Work Order 8.5 — Manual backend contract test
 
 ### Acceptance criteria
-- app can consume backend-provided tx payload in a controlled test setup
+- app can consume backend-provided sponsored action payload in a controlled test setup
 
 ---
 
@@ -1098,5 +1100,5 @@ v1 is done when a third-party Godot developer can:
 5. run the exported app,
 6. trigger Privy embedded login from inside the game through WalletService,
 7. receive wallet address/session state in Godot,
-8. use the documented transaction handoff path,
+8. use the documented backend-sponsored transaction path,
 9. do all of the above without manually wiring the HTML shell or JS bridge themselves.

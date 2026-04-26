@@ -50,6 +50,51 @@ export interface GlideTransactionPayload {
   metadata?: Record<string, unknown>;
 }
 
+export interface GlideSponsoredActionPrepareRequest {
+  kind: "backend_sponsored_action";
+  request_id: string;
+  wallet_address: string;
+  chain: "solana";
+  action: {
+    kind: string;
+    name: string;
+  };
+  game_payload?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+export interface GlideSponsoredActionPrepareResponse {
+  ok: boolean;
+  request_id: string;
+  status: "prepared" | "failed";
+  sponsor: {
+    sponsored: boolean;
+    type: "backend";
+  };
+  transaction?: GlideTransactionPayload;
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+
+export interface GlideSponsoredActionCompleteRequest {
+  request_id: string;
+  wallet_address: string;
+  signature: string;
+  chain: "solana";
+}
+
+export interface GlideSponsoredActionCompleteResponse {
+  ok: boolean;
+  request_id: string;
+  status: "confirmed" | "failed";
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+
 export interface GlideWalletBridge {
   ping(): Promise<Record<string, unknown>>;
   getShellEnv(): Promise<Record<string, unknown>>;

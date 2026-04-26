@@ -17580,6 +17580,80 @@ ${prettyStateOverride(stateOverride)}`;
     }
   });
 
+  // src/backend.ts
+  function isBackendSponsoredActionPayload(payload) {
+    return payload.kind === "backend_sponsored_action" && payload.chain === "solana" && typeof payload.request_id === "string" && typeof payload.wallet_address === "string" && typeof payload.action === "object" && payload.action !== null;
+  }
+  async function prepareSponsoredAction(env2, payload) {
+    const backendUrl = getBackendUrl(env2);
+    if (!backendUrl) {
+      throw {
+        code: "misconfigured",
+        error: "Backend URL is blank. Sponsored actions require a configured backend_url."
+      };
+    }
+    const response = await fetch(joinBackendPath(backendUrl, "/api/sponsored-actions/prepare"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const json = await response.json();
+    if (!response.ok) {
+      throw {
+        code: "backend_unavailable",
+        error: getErrorMessage(json, `Backend prepare request failed with HTTP ${response.status}.`)
+      };
+    }
+    if (!json.ok || json.status !== "prepared" || !json.transaction) {
+      throw {
+        code: "invalid_response",
+        error: getErrorMessage(json, "Backend prepare response did not include a prepared transaction payload.")
+      };
+    }
+    return json;
+  }
+  async function completeSponsoredAction(env2, payload) {
+    const backendUrl = getBackendUrl(env2);
+    if (!backendUrl) {
+      throw {
+        code: "misconfigured",
+        error: "Backend URL is blank. Sponsored action completion requires a configured backend_url."
+      };
+    }
+    const response = await fetch(joinBackendPath(backendUrl, "/api/sponsored-actions/complete"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const json = await response.json();
+    if (!response.ok) {
+      throw {
+        code: "backend_unavailable",
+        error: getErrorMessage(json, `Backend completion request failed with HTTP ${response.status}.`)
+      };
+    }
+    if (!json.ok) {
+      throw {
+        code: "invalid_response",
+        error: getErrorMessage(json, "Backend completion response did not indicate success.")
+      };
+    }
+    return json;
+  }
+  function getBackendUrl(env2) {
+    return String(env2.backend.url ?? "").trim();
+  }
+  function joinBackendPath(baseUrl, path) {
+    return `${baseUrl.replace(/\/+$/, "")}${path}`;
+  }
+  function getErrorMessage(response, fallback) {
+    return String(response?.error?.message ?? fallback);
+  }
+
   // node_modules/@privy-io/routes/dist/esm/analytics-events.mjs
   var t = { path: "/api/v1/analytics_events", method: "POST" };
 
@@ -28457,7 +28531,7 @@ Resources:
     commitStateUpTo();
     return fragments.join("");
   }
-  function getErrorMessage(code, context = {}) {
+  function getErrorMessage2(code, context = {}) {
     if (true) {
       return getHumanReadableErrorMessage(code, context);
     } else {
@@ -28492,7 +28566,7 @@ Resources:
           context = contextRest;
         }
       }
-      const message = getErrorMessage(code, context);
+      const message = getErrorMessage2(code, context);
       super(message, errorOptions);
       this.context = {
         __code: code,
@@ -37328,6 +37402,41 @@ Message: ${transactionMessage}.
           };
         }
         try {
+          if (isBackendSponsoredActionPayload(payload)) {
+            logBridge("backend_sponsored_prepare_start", {
+              requestId: payload.request_id,
+              action: payload.action
+            });
+            const prepared = await prepareSponsoredAction(env2, payload);
+            logBridge("backend_sponsored_prepare_done", {
+              requestId: prepared.request_id,
+              transactionKind: prepared.transaction?.kind
+            });
+            const signed = await signAndSendPrivySolanaTransaction(
+              getClient(),
+              prepared.transaction
+            );
+            const completed = await completeSponsoredAction(env2, {
+              request_id: prepared.request_id,
+              wallet_address: signed.walletAddress,
+              signature: signed.signature,
+              chain: "solana"
+            });
+            logBridge("backend_sponsored_complete_done", {
+              requestId: completed.request_id,
+              status: completed.status,
+              signature: signed.signature
+            });
+            return {
+              ok: true,
+              request_id: prepared.request_id,
+              signature: signed.signature,
+              address: signed.walletAddress,
+              provider_mode: env2.provider.mode,
+              source: "backend_sponsored_action",
+              backend_status: completed.status
+            };
+          }
           const result = await signAndSendPrivySolanaTransaction(getClient(), payload);
           logBridge("sign_and_send_transaction_done", {
             signature: result.signature,

@@ -73,11 +73,12 @@
 	</div>
 
 			<script>
-				const glidePrivyAppId = "";
-				const glidePrivyClientId = "";
-				const glidePrivyOriginUrl = "";
-				const glidePrivyCallbackUrl = "";
-				const glideDebugElement = document.getElementById("glide-shell-debug");
+					const glidePrivyAppId = "";
+					const glidePrivyClientId = "";
+					const glidePrivyOriginUrl = "";
+					const glidePrivyCallbackUrl = "";
+					const glideBackendUrl = "";
+					const glideDebugElement = document.getElementById("glide-shell-debug");
 				function glideDebugPush(entry) {
 					const text = typeof entry === "string" ? entry : JSON.stringify(entry, null, 2);
 					if (glideDebugElement) {
@@ -109,9 +110,9 @@
 					originUrl: glidePrivyOriginUrl || window.location.origin,
 					callbackUrl: glidePrivyCallbackUrl || (window.location.origin + "/auth/callback")
 				},
-				backend: {
-					url: ""
-			},
+					backend: {
+						url: glideBackendUrl
+				},
 			runtime: {
 				appTitle: document.title,
 				origin: window.location.origin

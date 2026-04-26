@@ -64,6 +64,11 @@ They persist to:
 res://glide/glide_plugin_config.cfg
 ```
 
+Current backend behavior:
+
+- `Backend URL` is injected into the exported shell build
+- backend-sponsored flows are expected to use that URL from `window.__glideEnv.backend.url`
+
 ## Required Privy Configuration
 
 Glide’s active Privy path expects these values to be configured in the plugin:
@@ -229,6 +234,37 @@ Current compatibility note:
 - older local demo code may still use `transaction_base64`
 - the canonical field name going forward is `serialized_tx_base64`
 
+## Backend-Sponsored Action Entry Payload
+
+When Glide is used in backend-sponsored mode, the shell now supports this payload through `WalletService.sign_and_send_transaction(...)`:
+
+```gdscript
+{
+  "kind": "backend_sponsored_action",
+  "request_id": "req_123",
+  "wallet_address": "<logged-in-wallet-address>",
+  "chain": "solana",
+  "action": {
+    "kind": "game_action",
+    "name": "claim_reward"
+  },
+  "game_payload": {
+    "reward_id": "daily_001"
+  },
+  "metadata": {
+    "scene": "wallet_login_demo"
+  }
+}
+```
+
+The shell then:
+
+1. calls backend `prepare`
+2. validates the returned transaction payload
+3. signs and sends the transaction with Privy
+4. calls backend `complete`
+5. returns a structured JSON-safe result to Godot
+
 ## Current Capability Boundary
 
 Current production-ready area:
@@ -238,11 +274,13 @@ Current production-ready area:
 - Privy login configuration path
 - Privy OAuth callback completion path
 - Privy-backed Solana sign-and-send bridge path
+- backend URL build injection
+- shell fetch helper for backend-sponsored actions
 
 Not yet finalized:
 
 - a Godot-native transaction builder helper
-- backend-prepared transaction execution recipes
+- end-to-end backend-sponsored execution flow
 - cleanup/removal of temporary shell debug output once transaction flow is fully verified
 
 ## Active Source Of Truth
@@ -262,6 +300,10 @@ Web shell source:
 - `web-shell/src/types.ts`
 - `web-shell/src/privy.ts`
 - `web-shell/src/walletBridge.ts`
+
+Backend contract doc:
+
+- `docs/glide_backend_contract.md`
 
 Legacy Phantom archive:
 

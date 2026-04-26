@@ -25,3 +25,4 @@ Main docs:
 - user guide: `docs/glide_user_guide.md`
 - implementation plan: `docs/bootstrap/glide_implementation_plan.md`
 - bridge spec: `docs/glide_bridge_interface_spec.md`
+- backend contract: `docs/glide_backend_contract.md`

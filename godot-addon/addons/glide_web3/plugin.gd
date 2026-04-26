@@ -735,6 +735,7 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 	var app_title := _plugin_config.app_title.strip_edges()
 	if app_title.is_empty():
 		app_title = "Glide App"
+	var backend_url := _plugin_config.backend_url.strip_edges()
 	var privy_app_id := _plugin_config.privy_app_id.strip_edges()
 	var privy_client_id := _plugin_config.privy_client_id.strip_edges()
 	var privy_origin_url := _get_privy_origin_url()
@@ -785,6 +786,10 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 		'const glidePrivyCallbackUrl = "";',
 		'const glidePrivyCallbackUrl = %s;' % JSON.stringify(privy_callback_url)
 	)
+	updated_html = updated_html.replace(
+		'const glideBackendUrl = "";',
+		'const glideBackendUrl = %s;' % JSON.stringify(backend_url)
+	)
 
 	file = FileAccess.open(output_file_absolute, FileAccess.WRITE)
 	if file == null:
@@ -805,12 +810,13 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 		"lines": [
 			"Applied app title to exported HTML: %s" % app_title,
 			"Applied Privy App ID to exported HTML: %s" % privy_app_id,
-			"Applied Privy client ID to exported HTML: %s" % privy_client_id,
-			"Applied Privy origin URL to exported HTML: %s" % privy_origin_url,
-			"Applied Privy callback URL to exported HTML: %s" % privy_callback_url,
-			"Generated Privy callback page for: %s" % privy_callback_url,
-		],
-	}
+				"Applied Privy client ID to exported HTML: %s" % privy_client_id,
+				"Applied Privy origin URL to exported HTML: %s" % privy_origin_url,
+				"Applied Privy callback URL to exported HTML: %s" % privy_callback_url,
+				"Applied backend URL to exported HTML: %s" % backend_url,
+				"Generated Privy callback page for: %s" % privy_callback_url,
+			],
+		}
 
 
 func _write_privy_callback_page(output_file_absolute: String, privy_callback_url: String) -> Dictionary:
