@@ -199,12 +199,15 @@ In mock mode:
 
 Glide now supports a real Privy-backed Solana `signAndSendTransaction` path.
 
-Current Godot-side payload shape:
+Canonical Godot-side payload shape:
 
 ```gdscript
 {
+  "kind": "solana_sign_and_send",
+  "chain": "solana",
+  "request_id": "req_123",
+  "serialized_tx_base64": "<base64 serialized Solana transaction>",
   "rpc_url": "https://api.devnet.solana.com",
-  "transaction_base64": "<base64 serialized Solana transaction>",
   "options": {
     "skipPreflight": false,
     "maxRetries": 3,
@@ -215,10 +218,16 @@ Current Godot-side payload shape:
 
 Notes:
 
-- `transaction_base64` must be a serialized Solana transaction encoded as base64
+- `serialized_tx_base64` must be a serialized Solana transaction encoded as base64
 - Glide will deserialize it in the browser shell
 - Glide then asks Privy’s embedded Solana wallet provider to sign and send it
 - `rpc_url` is required because the current shell path creates a `Connection` client from it
+- `request_id` is for caller correlation and future backend/logging use
+
+Current compatibility note:
+
+- older local demo code may still use `transaction_base64`
+- the canonical field name going forward is `serialized_tx_base64`
 
 ## Current Capability Boundary
 

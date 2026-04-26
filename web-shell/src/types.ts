@@ -33,6 +33,23 @@ export interface GlideShellEnv {
   };
 }
 
+export interface GlideSolanaTransactionOptions {
+  skipPreflight?: boolean;
+  maxRetries?: number;
+  preflightCommitment?: "processed" | "confirmed" | "finalized";
+  minContextSlot?: number;
+}
+
+export interface GlideTransactionPayload {
+  kind: "solana_sign_and_send";
+  chain: "solana";
+  request_id: string;
+  serialized_tx_base64: string;
+  rpc_url: string;
+  options?: GlideSolanaTransactionOptions;
+  metadata?: Record<string, unknown>;
+}
+
 export interface GlideWalletBridge {
   ping(): Promise<Record<string, unknown>>;
   getShellEnv(): Promise<Record<string, unknown>>;
@@ -41,5 +58,5 @@ export interface GlideWalletBridge {
   logout(): Promise<Record<string, unknown>>;
   isLoggedIn(): Promise<Record<string, unknown>>;
   getWalletAddress(): Promise<Record<string, unknown>>;
-  signAndSendTransaction(payload: Record<string, unknown>): Promise<Record<string, unknown>>;
+  signAndSendTransaction(payload: GlideTransactionPayload | Record<string, unknown>): Promise<Record<string, unknown>>;
 }

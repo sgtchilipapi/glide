@@ -109,8 +109,11 @@ func _on_send_transaction_pressed() -> void:
 	var transaction_base64 := _transaction_base64_edit.text.strip_edges()
 	_refresh_labels("Transaction requested.")
 	_wallet_service.sign_and_send_transaction({
+		"kind": "solana_sign_and_send",
+		"chain": "solana",
+		"request_id": "demo_tx_%d" % Time.get_ticks_msec(),
 		"rpc_url": rpc_url,
-		"transaction_base64": transaction_base64,
+		"serialized_tx_base64": transaction_base64,
 	})
 
 

@@ -279,7 +279,9 @@ export async function signAndSendPrivySolanaTransaction(
     };
   }
 
-  const transactionBase64 = String(payload.transaction_base64 ?? "").trim();
+  const transactionBase64 = String(
+    payload.serialized_tx_base64 ?? payload.transaction_base64 ?? "",
+  ).trim();
   const rpcUrl = String(payload.rpc_url ?? "").trim();
   if (!transactionBase64) {
     throw {

@@ -75,6 +75,49 @@ Not part of 2.1:
 
 Those come in later slice items.
 
+## Transaction Payload Contract
+
+Current v1 transaction handoff contract for Glide is:
+
+```json
+{
+  "kind": "solana_sign_and_send",
+  "chain": "solana",
+  "request_id": "req_123",
+  "serialized_tx_base64": "<base64 serialized Solana transaction>",
+  "rpc_url": "https://api.devnet.solana.com",
+  "options": {
+    "skipPreflight": false,
+    "maxRetries": 3,
+    "preflightCommitment": "confirmed"
+  },
+  "metadata": {
+    "label": "optional caller metadata"
+  }
+}
+```
+
+Required fields:
+- `kind: "solana_sign_and_send"`
+- `chain: "solana"`
+- `request_id: String`
+- `serialized_tx_base64: String`
+- `rpc_url: String`
+
+Optional fields:
+- `options`
+- `metadata`
+
+Rules:
+- payload must stay JSON-safe between Godot and the shell
+- serialized transaction bytes must be base64 encoded before entering the bridge
+- `request_id` is caller-owned and should be stable enough for UI/backend correlation
+- provider-specific SDK objects must not cross the bridge boundary
+
+Current compatibility note:
+- older local demo code may still send `transaction_base64`
+- the canonical field name going forward is `serialized_tx_base64`
+
 ## Current Source Of Truth
 
 Shell implementation:
