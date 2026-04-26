@@ -31,12 +31,23 @@
 			border-bottom: 1px solid #253246;
 		}
 
-		#glide-shell-status {
-			padding: 8px 14px;
-			font-size: 13px;
-			background: #0f1722;
-			border-bottom: 1px solid #253246;
-		}
+			#glide-shell-status {
+				padding: 8px 14px;
+				font-size: 13px;
+				background: #0f1722;
+				border-bottom: 1px solid #253246;
+			}
+
+			#glide-shell-debug {
+				padding: 8px 14px;
+				font: 12px/1.4 Consolas, "Courier New", monospace;
+				background: #0b111a;
+				border-bottom: 1px solid #253246;
+				color: #cfe1ff;
+				white-space: pre-wrap;
+				max-height: 180px;
+				overflow: auto;
+			}
 
 		#canvas-wrap {
 			flex: 1;
@@ -51,23 +62,44 @@
 		}
 	</style>
 </head>
-<body>
-	<div id="glide-shell-marker">Glide Web Shell Template</div>
-	<div id="glide-shell-status">Bridge: loading</div>
-	<div id="canvas-wrap">
-		<canvas id="canvas">
+	<body>
+		<div id="glide-shell-marker">Glide Web Shell Template</div>
+		<div id="glide-shell-status">Bridge: loading</div>
+		<pre id="glide-shell-debug">Debug log booting...</pre>
+		<div id="canvas-wrap">
+			<canvas id="canvas">
 			Your browser does not support the HTML5 canvas tag.
 		</canvas>
 	</div>
 
-		<script>
-			const glidePrivyAppId = "";
-			const glidePrivyClientId = "";
-			const glidePrivyOriginUrl = "";
-			const glidePrivyCallbackUrl = "";
-			window.__glideEnv = {
-				provider: {
-					name: "privy_embedded",
+			<script>
+				const glidePrivyAppId = "";
+				const glidePrivyClientId = "";
+				const glidePrivyOriginUrl = "";
+				const glidePrivyCallbackUrl = "";
+				const glideDebugElement = document.getElementById("glide-shell-debug");
+				function glideDebugPush(entry) {
+					const text = typeof entry === "string" ? entry : JSON.stringify(entry, null, 2);
+					if (glideDebugElement) {
+						const prior = glideDebugElement.textContent || "";
+						glideDebugElement.textContent = (prior + "\n" + text).trim();
+						glideDebugElement.scrollTop = glideDebugElement.scrollHeight;
+					}
+				}
+				window.__glideDebug = {
+					events: [],
+					push: function (entry) {
+						this.events.push(entry);
+						glideDebugPush(entry);
+					}
+				};
+				window.__glideDebug.push({
+					event: "shell_boot",
+					href: window.location.href
+				});
+				window.__glideEnv = {
+					provider: {
+						name: "privy_embedded",
 					mode: glidePrivyAppId && glidePrivyClientId ? "privy" : "mock",
 					oauthProvider: "google"
 				},
@@ -89,29 +121,45 @@
 		<script src="bridge.js"></script>
 		<script src="$GODOT_URL"></script>
 		<script>
-			(function () {
-				const status = document.getElementById("glide-shell-status");
-				if (!(window.glideWallet && typeof window.glideWallet.ping === "function")) {
-					window.__glideBridgeReady = false;
-					status.textContent = "Bridge: missing";
-					console.error("[Glide Web3] bridge.js did not initialize window.glideWallet before Godot boot");
-					return;
-				}
-
-				Promise.resolve(window.glideWallet.ping())
-					.then(function () {
-						window.__glideBridgeReady = true;
-						status.textContent = "Bridge: ready";
-						console.log("[Glide Web3] shell env", window.__glideEnv);
-						const engine = new Engine($GODOT_CONFIG);
-						engine.startGame();
-					})
-					.catch(function (error) {
-						window.__glideBridgeReady = false;
-						status.textContent = "Bridge: error";
-						console.error("[Glide Web3] bridge initialization failed before Godot boot", error);
+				(function () {
+					const status = document.getElementById("glide-shell-status");
+					window.__glideDebug.push({
+						event: "bridge_probe",
+						href: window.location.href
 					});
-			}());
+					if (!(window.glideWallet && typeof window.glideWallet.ping === "function")) {
+						window.__glideBridgeReady = false;
+						status.textContent = "Bridge: missing";
+						window.__glideDebug.push({
+							event: "bridge_missing"
+						});
+						console.error("[Glide Web3] bridge.js did not initialize window.glideWallet before Godot boot");
+						return;
+					}
+
+					Promise.resolve(window.glideWallet.ping())
+						.then(function () {
+							window.__glideBridgeReady = true;
+							status.textContent = "Bridge: ready";
+							window.__glideDebug.push({
+								event: "bridge_ready",
+								provider: window.__glideEnv.provider.name,
+								mode: window.__glideEnv.provider.mode
+							});
+							console.log("[Glide Web3] shell env", window.__glideEnv);
+							const engine = new Engine($GODOT_CONFIG);
+							engine.startGame();
+						})
+						.catch(function (error) {
+							window.__glideBridgeReady = false;
+							status.textContent = "Bridge: error";
+							window.__glideDebug.push({
+								event: "bridge_error",
+								error: String(error)
+							});
+							console.error("[Glide Web3] bridge initialization failed before Godot boot", error);
+						});
+				}());
 		</script>
 	</body>
 </html>

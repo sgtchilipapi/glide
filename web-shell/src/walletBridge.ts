@@ -18,37 +18,84 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
   let userId = "";
   let loginMethod = "";
 
+  function logBridge(event: string, payload?: Record<string, unknown>): void {
+    const entry = {
+      at: new Date().toISOString(),
+      event,
+      ...(payload ?? {}),
+    };
+    console.log("[Glide Bridge]", entry);
+    const debugWindow = window as Window & {
+      __glideDebug?: {
+        events: Array<Record<string, unknown>>;
+        push?: (entry: Record<string, unknown>) => void;
+      };
+    };
+    if (!debugWindow.__glideDebug) {
+      debugWindow.__glideDebug = { events: [] };
+    }
+    if (typeof debugWindow.__glideDebug.push === "function") {
+      debugWindow.__glideDebug.push(entry);
+      return;
+    }
+    debugWindow.__glideDebug.events.push(entry);
+  }
+
   function getClient(): Privy {
     if (client === null) {
+      logBridge("create_client");
       client = createGlidePrivyClient(env);
     }
     return client;
   }
 
   async function ensureInitialized(): Promise<void> {
+    logBridge("ensure_initialized_start", {
+      providerMode: env.provider.mode,
+      alreadyLoggedIn: loggedIn,
+      hasInitPromise: initPromise !== null,
+    });
     if (env.provider.mode === "mock") {
+      logBridge("ensure_initialized_mock_mode");
       return;
     }
 
     if (initPromise) {
+      logBridge("ensure_initialized_wait_existing");
       await initPromise;
       return;
     }
 
     initPromise = (async () => {
       if (!canUsePrivy(env)) {
+        logBridge("ensure_initialized_misconfigured", {
+          hasAppId: env.privy.appId.trim().length > 0,
+          hasClientId: env.privy.clientId.trim().length > 0,
+        });
         return;
       }
 
       const activeClient = getClient();
       await initializePrivy(activeClient);
 
-      const callbackSession = await completePrivyOAuthCallback(activeClient, env);
+      let callbackSession = null;
+      try {
+        callbackSession = await completePrivyOAuthCallback(activeClient, env);
+      } catch (error) {
+        logBridge("callback_failed", normalizePrivyError(error));
+        throw error;
+      }
       if (callbackSession) {
         loggedIn = callbackSession.loggedIn;
         walletAddress = callbackSession.walletAddress;
         userId = callbackSession.userId;
         loginMethod = callbackSession.loginMethod;
+        logBridge("callback_session_applied", {
+          loggedIn,
+          walletAddress,
+          userId,
+          loginMethod,
+        });
         return;
       }
 
@@ -57,9 +104,21 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
       walletAddress = restoredSession.walletAddress;
       userId = restoredSession.userId;
       loginMethod = restoredSession.loginMethod;
+      logBridge("restored_session_applied", {
+        loggedIn,
+        walletAddress,
+        userId,
+        loginMethod,
+      });
     })();
 
     await initPromise;
+    logBridge("ensure_initialized_done", {
+      loggedIn,
+      walletAddress,
+      userId,
+      loginMethod,
+    });
   }
 
   return {
@@ -93,9 +152,16 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
     },
 
     async login() {
+      logBridge("login_requested", {
+        providerMode: env.provider.mode,
+        alreadyLoggedIn: loggedIn,
+      });
       await ensureInitialized();
 
       if (loggedIn) {
+        logBridge("login_return_existing_session", {
+          walletAddress,
+        });
         return {
           ok: true,
           address: walletAddress,
@@ -108,6 +174,9 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
       if (env.provider.mode === "mock") {
         loggedIn = true;
         walletAddress = "MOCK_ADDRESS_001";
+        logBridge("login_mock_success", {
+          walletAddress,
+        });
         return {
           ok: true,
           address: walletAddress,
@@ -118,6 +187,10 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
       }
 
       if (!canUsePrivy(env)) {
+        logBridge("login_misconfigured", {
+          hasAppId: env.privy.appId.trim().length > 0,
+          hasClientId: env.privy.clientId.trim().length > 0,
+        });
         throw {
           code: "misconfigured",
           message: "Privy mode requires valid Privy appId and clientId.",
@@ -126,6 +199,10 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
 
       try {
         const result = await beginPrivyLogin(getClient(), env);
+        logBridge("login_redirect_started", {
+          redirectUrl: result.redirectUrl,
+          oauthProvider: env.provider.oauthProvider,
+        });
         return {
           ok: true,
           redirect_started: true,
@@ -135,11 +212,16 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
           oauth_provider: env.provider.oauthProvider,
         };
       } catch (error) {
-        throw normalizePrivyError(error);
+        const normalizedError = normalizePrivyError(error);
+        logBridge("login_failed", normalizedError);
+        throw normalizedError;
       }
     },
 
     async logout() {
+      logBridge("logout_requested", {
+        hadClient: client !== null,
+      });
       await ensureInitialized();
 
       if (client) {
@@ -149,6 +231,7 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
       walletAddress = "";
       userId = "";
       loginMethod = "";
+      logBridge("logout_done");
       return {
         ok: true,
         source: env.provider.mode,
@@ -157,6 +240,9 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
 
     async isLoggedIn() {
       await ensureInitialized();
+      logBridge("is_logged_in", {
+        loggedIn,
+      });
       return {
         ok: true,
         logged_in: loggedIn,
@@ -165,6 +251,9 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
 
     async getWalletAddress() {
       await ensureInitialized();
+      logBridge("get_wallet_address", {
+        walletAddress,
+      });
       return {
         ok: true,
         address: walletAddress,
@@ -172,6 +261,9 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
     },
 
     async signAndSendTransaction(payload: Record<string, unknown>) {
+      logBridge("sign_and_send_transaction_stub", {
+        payload,
+      });
       return {
         ok: true,
         signature: "MOCK_TX_001",

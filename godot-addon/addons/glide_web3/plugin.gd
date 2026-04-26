@@ -55,7 +55,7 @@ func _exit_tree() -> void:
 
 
 func _build_panel_ui() -> void:
-	_panel.custom_minimum_size = Vector2(420, 180)
+	_panel.custom_minimum_size = Vector2(760, 220)
 
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 8)
@@ -87,6 +87,7 @@ func _build_panel_ui() -> void:
 
 	var form := GridContainer.new()
 	form.columns = 2
+	form.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form.add_theme_constant_override("h_separation", 8)
 	form.add_theme_constant_override("v_separation", 6)
 	content.add_child(form)
@@ -98,6 +99,8 @@ func _build_panel_ui() -> void:
 	_backend_url_edit = LineEdit.new()
 	_backend_url_edit.placeholder_text = "https://api.example.com"
 	_backend_url_edit.text = _plugin_config.backend_url
+	_backend_url_edit.custom_minimum_size = Vector2(460, 0)
+	_backend_url_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form.add_child(_backend_url_edit)
 
 	var output_dir_title := Label.new()
@@ -107,6 +110,8 @@ func _build_panel_ui() -> void:
 	_output_dir_edit = LineEdit.new()
 	_output_dir_edit.placeholder_text = GlideConstants.DEFAULT_OUTPUT_DIR
 	_output_dir_edit.text = _plugin_config.output_dir
+	_output_dir_edit.custom_minimum_size = Vector2(460, 0)
+	_output_dir_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form.add_child(_output_dir_edit)
 
 	var app_title_title := Label.new()
@@ -116,6 +121,8 @@ func _build_panel_ui() -> void:
 	_app_title_edit = LineEdit.new()
 	_app_title_edit.placeholder_text = "Glide App"
 	_app_title_edit.text = _plugin_config.app_title
+	_app_title_edit.custom_minimum_size = Vector2(460, 0)
+	_app_title_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form.add_child(_app_title_edit)
 
 	var privy_app_id_title := Label.new()
@@ -125,6 +132,8 @@ func _build_panel_ui() -> void:
 	_privy_app_id_edit = LineEdit.new()
 	_privy_app_id_edit.placeholder_text = "privy-app-id"
 	_privy_app_id_edit.text = _plugin_config.privy_app_id
+	_privy_app_id_edit.custom_minimum_size = Vector2(460, 0)
+	_privy_app_id_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form.add_child(_privy_app_id_edit)
 
 	var privy_client_id_title := Label.new()
@@ -134,6 +143,8 @@ func _build_panel_ui() -> void:
 	_privy_client_id_edit = LineEdit.new()
 	_privy_client_id_edit.placeholder_text = "privy-client-id"
 	_privy_client_id_edit.text = _plugin_config.privy_client_id
+	_privy_client_id_edit.custom_minimum_size = Vector2(460, 0)
+	_privy_client_id_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form.add_child(_privy_client_id_edit)
 
 	var privy_origin_title := Label.new()
@@ -143,6 +154,8 @@ func _build_panel_ui() -> void:
 	_privy_origin_url_edit = LineEdit.new()
 	_privy_origin_url_edit.placeholder_text = "http://127.0.0.1:8000"
 	_privy_origin_url_edit.text = _plugin_config.privy_origin_url
+	_privy_origin_url_edit.custom_minimum_size = Vector2(460, 0)
+	_privy_origin_url_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form.add_child(_privy_origin_url_edit)
 
 	var privy_callback_title := Label.new()
@@ -152,6 +165,8 @@ func _build_panel_ui() -> void:
 	_privy_callback_url_edit = LineEdit.new()
 	_privy_callback_url_edit.placeholder_text = "http://127.0.0.1:8000/auth/callback"
 	_privy_callback_url_edit.text = _plugin_config.privy_callback_url
+	_privy_callback_url_edit.custom_minimum_size = Vector2(460, 0)
+	_privy_callback_url_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form.add_child(_privy_callback_url_edit)
 
 	var pwa_title := Label.new()
@@ -242,17 +257,17 @@ func _on_save_config_pressed() -> void:
 	_save_plugin_config(_plugin_config)
 	_refresh_output_dir_label()
 	_set_lines([
-			"Config saved.",
-			"Backend URL: %s" % _plugin_config.backend_url,
-			"Output: %s" % _plugin_config.output_dir,
-			"App title: %s" % _plugin_config.app_title,
-			"Privy App ID: %s" % _plugin_config.privy_app_id,
-			"Privy Client ID: %s" % _plugin_config.privy_client_id,
-			"Privy Origin URL: %s" % _get_privy_origin_url(),
-			"Privy Callback URL: %s" % _get_privy_callback_url(),
-			"Shell HTML: %s" % GlideConstants.WEB_SHELL_HTML,
-			"PWA enabled: %s" % str(_plugin_config.pwa_enabled),
-		])
+		"Config saved.",
+		"Backend URL: %s" % _plugin_config.backend_url,
+		"Output: %s" % _plugin_config.output_dir,
+		"App title: %s" % _plugin_config.app_title,
+		"Privy App ID: %s" % _plugin_config.privy_app_id,
+		"Privy Client ID: %s" % _plugin_config.privy_client_id,
+		"Privy Origin URL: %s" % _get_privy_origin_url(),
+		"Privy Callback URL: %s" % _get_privy_callback_url(),
+		"Shell HTML: %s" % GlideConstants.WEB_SHELL_HTML,
+		"PWA enabled: %s" % str(_plugin_config.pwa_enabled),
+	])
 
 
 func _on_ping_shell_pressed() -> void:
@@ -754,22 +769,22 @@ func _apply_build_config(output_file_absolute: String) -> Dictionary:
 		app_title,
 		html.substr(title_end + 8),
 	]
-		updated_html = updated_html.replace(
-			'const glidePrivyAppId = "";',
-			'const glidePrivyAppId = %s;' % JSON.stringify(privy_app_id)
-		)
-		updated_html = updated_html.replace(
-			'const glidePrivyClientId = "";',
-			'const glidePrivyClientId = %s;' % JSON.stringify(privy_client_id)
-		)
-		updated_html = updated_html.replace(
-			'const glidePrivyOriginUrl = "";',
-			'const glidePrivyOriginUrl = %s;' % JSON.stringify(privy_origin_url)
-		)
-		updated_html = updated_html.replace(
-			'const glidePrivyCallbackUrl = "";',
-			'const glidePrivyCallbackUrl = %s;' % JSON.stringify(privy_callback_url)
-		)
+	updated_html = updated_html.replace(
+		'const glidePrivyAppId = "";',
+		'const glidePrivyAppId = %s;' % JSON.stringify(privy_app_id)
+	)
+	updated_html = updated_html.replace(
+		'const glidePrivyClientId = "";',
+		'const glidePrivyClientId = %s;' % JSON.stringify(privy_client_id)
+	)
+	updated_html = updated_html.replace(
+		'const glidePrivyOriginUrl = "";',
+		'const glidePrivyOriginUrl = %s;' % JSON.stringify(privy_origin_url)
+	)
+	updated_html = updated_html.replace(
+		'const glidePrivyCallbackUrl = "";',
+		'const glidePrivyCallbackUrl = %s;' % JSON.stringify(privy_callback_url)
+	)
 
 	file = FileAccess.open(output_file_absolute, FileAccess.WRITE)
 	if file == null:
@@ -890,12 +905,13 @@ func _parse_callback_output_path(output_file_absolute: String, callback_input_ur
 		}
 
 	var callback_file_absolute := base_output_dir
-	for index in range(callback_segments.size()):
-		var segment := callback_segments[index]
-		if index == callback_segments.size() - 1:
-			callback_file_absolute = callback_file_absolute.path_join(segment)
-		else:
-			callback_file_absolute = callback_file_absolute.path_join(segment)
+	var last_segment := callback_segments[callback_segments.size() - 1]
+	var has_file_extension := last_segment.contains(".")
+	for segment in callback_segments:
+		callback_file_absolute = callback_file_absolute.path_join(segment)
+
+	if not has_file_extension:
+		callback_file_absolute = callback_file_absolute.path_join("index.html")
 
 	return {
 		"ok": true,
@@ -912,16 +928,16 @@ func _load_or_create_plugin_config() -> GlidePluginConfig:
 		var file := ConfigFile.new()
 		var load_error := file.load(GlideConstants.CONFIG_FILE_PATH)
 		if load_error == OK:
-				config.backend_url = str(file.get_value("glide", "backend_url", config.backend_url))
-				config.output_dir = str(file.get_value("glide", "output_dir", config.output_dir))
-				config.pwa_enabled = bool(file.get_value("glide", "pwa_enabled", config.pwa_enabled))
-				config.app_title = str(file.get_value("glide", "app_title", config.app_title))
-				config.privy_app_id = str(file.get_value("glide", "privy_app_id", file.get_value("glide", "phantom_app_id", config.privy_app_id)))
-				config.privy_client_id = str(file.get_value("glide", "privy_client_id", config.privy_client_id))
-				config.privy_origin_url = str(file.get_value("glide", "privy_origin_url", file.get_value("glide", "phantom_origin_url", file.get_value("glide", "phantom_redirect_origin", config.privy_origin_url))))
-				config.privy_callback_url = str(file.get_value("glide", "privy_callback_url", file.get_value("glide", "phantom_callback_url", config.privy_callback_url)))
-				config.preset_name = str(file.get_value("glide", "preset_name", config.preset_name))
-				return config
+			config.backend_url = str(file.get_value("glide", "backend_url", config.backend_url))
+			config.output_dir = str(file.get_value("glide", "output_dir", config.output_dir))
+			config.pwa_enabled = bool(file.get_value("glide", "pwa_enabled", config.pwa_enabled))
+			config.app_title = str(file.get_value("glide", "app_title", config.app_title))
+			config.privy_app_id = str(file.get_value("glide", "privy_app_id", file.get_value("glide", "phantom_app_id", config.privy_app_id)))
+			config.privy_client_id = str(file.get_value("glide", "privy_client_id", config.privy_client_id))
+			config.privy_origin_url = str(file.get_value("glide", "privy_origin_url", file.get_value("glide", "phantom_origin_url", file.get_value("glide", "phantom_redirect_origin", config.privy_origin_url))))
+			config.privy_callback_url = str(file.get_value("glide", "privy_callback_url", file.get_value("glide", "phantom_callback_url", config.privy_callback_url)))
+			config.preset_name = str(file.get_value("glide", "preset_name", config.preset_name))
+			return config
 
 	_save_plugin_config(config)
 	return config

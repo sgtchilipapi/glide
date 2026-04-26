@@ -19488,10 +19488,34 @@ Resources:
   var DEFAULT_LOGIN_MODE = "login-or-sign-up";
   var embeddedIframe = null;
   var embeddedListenerAttached = false;
+  function logPrivy(event, payload) {
+    const entry = {
+      at: (/* @__PURE__ */ new Date()).toISOString(),
+      source: "privy",
+      event,
+      ...payload ?? {}
+    };
+    console.log("[Glide Privy]", event, payload ?? {});
+    const debugWindow = window;
+    if (!debugWindow.__glideDebug) {
+      return;
+    }
+    if (typeof debugWindow.__glideDebug.push === "function") {
+      debugWindow.__glideDebug.push(entry);
+      return;
+    }
+    debugWindow.__glideDebug.events.push(entry);
+  }
   function canUsePrivy(env2) {
     return env2.provider.mode === "privy" && env2.privy.appId.trim().length > 0 && env2.privy.clientId.trim().length > 0;
   }
   function createGlidePrivyClient(env2) {
+    logPrivy("create_client", {
+      hasAppId: env2.privy.appId.trim().length > 0,
+      hasClientId: env2.privy.clientId.trim().length > 0,
+      originUrl: env2.privy.originUrl,
+      callbackUrl: env2.privy.callbackUrl
+    });
     return new d6({
       appId: env2.privy.appId,
       clientId: env2.privy.clientId,
@@ -19499,30 +19523,55 @@ Resources:
     });
   }
   async function initializePrivy(client) {
+    logPrivy("initialize_start");
     await client.initialize();
+    logPrivy("initialize_done");
     await ensureEmbeddedWalletContext(client);
+    logPrivy("embedded_wallet_context_ready");
   }
   async function restorePrivySession(client) {
     try {
       const { user } = await client.user.get();
-      return toPrivySession(user, "restored_session");
-    } catch {
+      const session = toPrivySession(user, "restored_session");
+      logPrivy("restore_session", {
+        loggedIn: session.loggedIn,
+        walletAddress: session.walletAddress,
+        userId: session.userId
+      });
+      return session;
+    } catch (error) {
+      logPrivy("restore_session_failed", {
+        error: error instanceof Error ? error.message : String(error)
+      });
       return emptySession();
     }
   }
   async function beginPrivyLogin(client, env2) {
+    logPrivy("begin_login", {
+      provider: env2.provider.oauthProvider,
+      callbackUrl: env2.privy.callbackUrl
+    });
     const response = await client.auth.oauth.generateURL(
       toPrivyProvider(env2.provider.oauthProvider),
       env2.privy.callbackUrl
     );
+    logPrivy("begin_login_redirect", {
+      redirectUrl: response.url
+    });
     window.location.assign(response.url);
     return { redirectUrl: response.url };
   }
   async function completePrivyOAuthCallback(client, env2) {
     const params = getOAuthCallbackParams();
     if (!params) {
+      logPrivy("callback_absent");
       return null;
     }
+    logPrivy("callback_detected", {
+      codeLength: params.code.length,
+      stateLength: params.state.length,
+      currentUrl: window.location.href
+    });
     const result = await client.auth.oauth.loginWithCode(
       params.code,
       params.state,
@@ -19538,10 +19587,18 @@ Resources:
       }
     );
     clearOAuthCallbackParams();
-    return toPrivySession(result.user, "oauth_callback");
+    const session = toPrivySession(result.user, "oauth_callback");
+    logPrivy("callback_completed", {
+      loggedIn: session.loggedIn,
+      walletAddress: session.walletAddress,
+      userId: session.userId
+    });
+    return session;
   }
   async function logoutPrivy(client) {
+    logPrivy("logout_start");
     await client.auth.logout();
+    logPrivy("logout_done");
   }
   function emptySession() {
     return {
@@ -19569,21 +19626,22 @@ Resources:
   }
   function getOAuthCallbackParams() {
     const url = new URL(window.location.href);
-    const code = url.searchParams.get("code");
-    const state = url.searchParams.get("state");
+    const code = url.searchParams.get("privy_oauth_code");
+    const state = url.searchParams.get("privy_oauth_state");
+    const provider = url.searchParams.get("privy_oauth_provider") ?? "";
     if (!code || !state) {
       return null;
     }
-    return { code, state };
+    return { code, state, provider };
   }
   function clearOAuthCallbackParams() {
     const url = new URL(window.location.href);
-    if (!url.searchParams.has("code") && !url.searchParams.has("state")) {
+    if (!url.searchParams.has("privy_oauth_code") && !url.searchParams.has("privy_oauth_state")) {
       return;
     }
-    url.searchParams.delete("code");
-    url.searchParams.delete("state");
-    url.searchParams.delete("provider");
+    url.searchParams.delete("privy_oauth_code");
+    url.searchParams.delete("privy_oauth_state");
+    url.searchParams.delete("privy_oauth_provider");
     window.history.replaceState({}, document.title, url.toString());
   }
   async function ensureEmbeddedWalletContext(client) {
@@ -19595,19 +19653,26 @@ Resources:
       embeddedIframe.style.height = "0";
       embeddedIframe.setAttribute("aria-hidden", "true");
       document.body.appendChild(embeddedIframe);
+      logPrivy("embedded_iframe_created", {
+        iframeUrl: embeddedIframe.src
+      });
     }
     if (embeddedIframe.contentWindow) {
       client.setMessagePoster(embeddedIframe.contentWindow);
+      logPrivy("embedded_message_poster_set");
     }
     if (!embeddedListenerAttached) {
       window.addEventListener("message", (event) => {
         client.embeddedWallet.onMessage(event.data);
       });
       embeddedListenerAttached = true;
+      logPrivy("embedded_message_listener_attached");
     }
     try {
       await client.embeddedWallet.ping(5e3);
+      logPrivy("embedded_ping_ok");
     } catch {
+      logPrivy("embedded_ping_timeout");
     }
   }
   function toPrivyProvider(provider) {
@@ -19622,32 +19687,73 @@ Resources:
     let walletAddress = "";
     let userId = "";
     let loginMethod = "";
+    function logBridge(event, payload) {
+      const entry = {
+        at: (/* @__PURE__ */ new Date()).toISOString(),
+        event,
+        ...payload ?? {}
+      };
+      console.log("[Glide Bridge]", entry);
+      const debugWindow = window;
+      if (!debugWindow.__glideDebug) {
+        debugWindow.__glideDebug = { events: [] };
+      }
+      if (typeof debugWindow.__glideDebug.push === "function") {
+        debugWindow.__glideDebug.push(entry);
+        return;
+      }
+      debugWindow.__glideDebug.events.push(entry);
+    }
     function getClient() {
       if (client === null) {
+        logBridge("create_client");
         client = createGlidePrivyClient(env2);
       }
       return client;
     }
     async function ensureInitialized() {
+      logBridge("ensure_initialized_start", {
+        providerMode: env2.provider.mode,
+        alreadyLoggedIn: loggedIn,
+        hasInitPromise: initPromise !== null
+      });
       if (env2.provider.mode === "mock") {
+        logBridge("ensure_initialized_mock_mode");
         return;
       }
       if (initPromise) {
+        logBridge("ensure_initialized_wait_existing");
         await initPromise;
         return;
       }
       initPromise = (async () => {
         if (!canUsePrivy(env2)) {
+          logBridge("ensure_initialized_misconfigured", {
+            hasAppId: env2.privy.appId.trim().length > 0,
+            hasClientId: env2.privy.clientId.trim().length > 0
+          });
           return;
         }
         const activeClient = getClient();
         await initializePrivy(activeClient);
-        const callbackSession = await completePrivyOAuthCallback(activeClient, env2);
+        let callbackSession = null;
+        try {
+          callbackSession = await completePrivyOAuthCallback(activeClient, env2);
+        } catch (error) {
+          logBridge("callback_failed", normalizePrivyError(error));
+          throw error;
+        }
         if (callbackSession) {
           loggedIn = callbackSession.loggedIn;
           walletAddress = callbackSession.walletAddress;
           userId = callbackSession.userId;
           loginMethod = callbackSession.loginMethod;
+          logBridge("callback_session_applied", {
+            loggedIn,
+            walletAddress,
+            userId,
+            loginMethod
+          });
           return;
         }
         const restoredSession = await restorePrivySession(activeClient);
@@ -19655,8 +19761,20 @@ Resources:
         walletAddress = restoredSession.walletAddress;
         userId = restoredSession.userId;
         loginMethod = restoredSession.loginMethod;
+        logBridge("restored_session_applied", {
+          loggedIn,
+          walletAddress,
+          userId,
+          loginMethod
+        });
       })();
       await initPromise;
+      logBridge("ensure_initialized_done", {
+        loggedIn,
+        walletAddress,
+        userId,
+        loginMethod
+      });
     }
     return {
       async ping() {
@@ -19686,8 +19804,15 @@ Resources:
         };
       },
       async login() {
+        logBridge("login_requested", {
+          providerMode: env2.provider.mode,
+          alreadyLoggedIn: loggedIn
+        });
         await ensureInitialized();
         if (loggedIn) {
+          logBridge("login_return_existing_session", {
+            walletAddress
+          });
           return {
             ok: true,
             address: walletAddress,
@@ -19699,6 +19824,9 @@ Resources:
         if (env2.provider.mode === "mock") {
           loggedIn = true;
           walletAddress = "MOCK_ADDRESS_001";
+          logBridge("login_mock_success", {
+            walletAddress
+          });
           return {
             ok: true,
             address: walletAddress,
@@ -19708,6 +19836,10 @@ Resources:
           };
         }
         if (!canUsePrivy(env2)) {
+          logBridge("login_misconfigured", {
+            hasAppId: env2.privy.appId.trim().length > 0,
+            hasClientId: env2.privy.clientId.trim().length > 0
+          });
           throw {
             code: "misconfigured",
             message: "Privy mode requires valid Privy appId and clientId."
@@ -19715,6 +19847,10 @@ Resources:
         }
         try {
           const result = await beginPrivyLogin(getClient(), env2);
+          logBridge("login_redirect_started", {
+            redirectUrl: result.redirectUrl,
+            oauthProvider: env2.provider.oauthProvider
+          });
           return {
             ok: true,
             redirect_started: true,
@@ -19724,10 +19860,15 @@ Resources:
             oauth_provider: env2.provider.oauthProvider
           };
         } catch (error) {
-          throw normalizePrivyError(error);
+          const normalizedError = normalizePrivyError(error);
+          logBridge("login_failed", normalizedError);
+          throw normalizedError;
         }
       },
       async logout() {
+        logBridge("logout_requested", {
+          hadClient: client !== null
+        });
         await ensureInitialized();
         if (client) {
           await logoutPrivy(client);
@@ -19736,6 +19877,7 @@ Resources:
         walletAddress = "";
         userId = "";
         loginMethod = "";
+        logBridge("logout_done");
         return {
           ok: true,
           source: env2.provider.mode
@@ -19743,6 +19885,9 @@ Resources:
       },
       async isLoggedIn() {
         await ensureInitialized();
+        logBridge("is_logged_in", {
+          loggedIn
+        });
         return {
           ok: true,
           logged_in: loggedIn
@@ -19750,12 +19895,18 @@ Resources:
       },
       async getWalletAddress() {
         await ensureInitialized();
+        logBridge("get_wallet_address", {
+          walletAddress
+        });
         return {
           ok: true,
           address: walletAddress
         };
       },
       async signAndSendTransaction(payload) {
+        logBridge("sign_and_send_transaction_stub", {
+          payload
+        });
         return {
           ok: true,
           signature: "MOCK_TX_001",

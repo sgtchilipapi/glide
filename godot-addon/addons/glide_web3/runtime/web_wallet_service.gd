@@ -89,8 +89,11 @@ func _handle_login_success(result: Variant) -> void:
 
 func _handle_login_state(result: Variant) -> void:
 	var payload := _normalize_result_dictionary(result)
+	var was_logged_in := _logged_in
 	_logged_in = bool(payload.get("logged_in", false))
 	_wallet_address = str(payload.get("address", ""))
+	if _logged_in and (not was_logged_in or not _wallet_address.is_empty()):
+		login_success.emit(_wallet_address)
 
 
 func _emit_method_error(method_name: String, error: Dictionary) -> void:
