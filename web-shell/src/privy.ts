@@ -1,10 +1,12 @@
 import Privy, {
   LocalStorage,
+  getEntropyDetailsFromUser,
   getUserEmbeddedEthereumWallet,
   getUserEmbeddedSolanaWallet,
   type OAuthProviderID,
   type User,
 } from "@privy-io/js-sdk-core";
+import { Connection, Transaction, VersionedTransaction } from "@solana/web3.js";
 import type { GlideAuthProvider, GlideShellEnv } from "./types";
 
 type GlidePrivySession = {
@@ -254,4 +256,129 @@ async function ensureEmbeddedWalletContext(client: Privy): Promise<void> {
 
 function toPrivyProvider(provider: GlideAuthProvider): OAuthProviderID {
   return provider as OAuthProviderID;
+}
+
+export async function signAndSendPrivySolanaTransaction(
+  client: Privy,
+  payload: Record<string, unknown>,
+): Promise<{ signature: string; walletAddress: string }> {
+  const { user } = await client.user.get();
+  const solanaAccount = getUserEmbeddedSolanaWallet(user);
+  if (!solanaAccount) {
+    throw {
+      code: "wallet_unavailable",
+      error: "No embedded Solana wallet is available for the current Privy user.",
+    };
+  }
+
+  const entropyDetails = getEntropyDetailsFromUser(user, solanaAccount);
+  if (!entropyDetails) {
+    throw {
+      code: "wallet_unavailable",
+      error: "Could not resolve Privy wallet entropy details for the Solana wallet.",
+    };
+  }
+
+  const transactionBase64 = String(payload.transaction_base64 ?? "").trim();
+  const rpcUrl = String(payload.rpc_url ?? "").trim();
+  if (!transactionBase64) {
+    throw {
+      code: "invalid_payload",
+      error: "Expected payload.transaction_base64 to contain a base64-encoded serialized Solana transaction.",
+    };
+  }
+  if (!rpcUrl) {
+    throw {
+      code: "invalid_payload",
+      error: "Expected payload.rpc_url to contain a Solana RPC endpoint URL.",
+    };
+  }
+
+  const provider = await client.embeddedWallet.getSolanaProvider(
+    solanaAccount,
+    entropyDetails.entropyId,
+    entropyDetails.entropyIdVerifier,
+  );
+
+  const transaction = deserializeSolanaTransaction(transactionBase64);
+  const connection = new Connection(rpcUrl);
+  const options = parseSolanaSendOptions(payload.options);
+
+  logPrivy("solana_sign_and_send_start", {
+    walletAddress: solanaAccount.address,
+    rpcUrl,
+    hasOptions: Object.keys(options).length > 0,
+  });
+
+  const result = await provider.request({
+    method: "signAndSendTransaction",
+    params: {
+      transaction,
+      connection,
+      options,
+    },
+  });
+
+  const signature = String(result.signature ?? "");
+  logPrivy("solana_sign_and_send_done", {
+    walletAddress: solanaAccount.address,
+    signature,
+  });
+
+  return {
+    signature,
+    walletAddress: solanaAccount.address,
+  };
+}
+
+function deserializeSolanaTransaction(
+  transactionBase64: string,
+): Transaction | VersionedTransaction {
+  const bytes = Uint8Array.from(atob(transactionBase64), (char) =>
+    char.charCodeAt(0),
+  );
+
+  try {
+    return VersionedTransaction.deserialize(bytes);
+  } catch {
+    return Transaction.from(Buffer.from(bytes));
+  }
+}
+
+function parseSolanaSendOptions(rawOptions: unknown): {
+  skipPreflight?: boolean;
+  maxRetries?: number;
+  preflightCommitment?: "processed" | "confirmed" | "finalized";
+  minContextSlot?: number;
+} {
+  if (!rawOptions || typeof rawOptions !== "object") {
+    return {};
+  }
+
+  const options = rawOptions as Record<string, unknown>;
+  const parsed: {
+    skipPreflight?: boolean;
+    maxRetries?: number;
+    preflightCommitment?: "processed" | "confirmed" | "finalized";
+    minContextSlot?: number;
+  } = {};
+
+  if (typeof options.skipPreflight === "boolean") {
+    parsed.skipPreflight = options.skipPreflight;
+  }
+  if (typeof options.maxRetries === "number") {
+    parsed.maxRetries = options.maxRetries;
+  }
+  if (
+    options.preflightCommitment === "processed" ||
+    options.preflightCommitment === "confirmed" ||
+    options.preflightCommitment === "finalized"
+  ) {
+    parsed.preflightCommitment = options.preflightCommitment;
+  }
+  if (typeof options.minContextSlot === "number") {
+    parsed.minContextSlot = options.minContextSlot;
+  }
+
+  return parsed;
 }

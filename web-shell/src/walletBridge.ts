@@ -7,6 +7,7 @@ import {
   initializePrivy,
   logoutPrivy,
   restorePrivySession,
+  signAndSendPrivySolanaTransaction,
 } from "./privy";
 import type { GlideShellEnv, GlideWalletBridge } from "./types";
 
@@ -261,14 +262,50 @@ export function createWalletBridge(env: GlideShellEnv): GlideWalletBridge {
     },
 
     async signAndSendTransaction(payload: Record<string, unknown>) {
-      logBridge("sign_and_send_transaction_stub", {
-        payload,
+      logBridge("sign_and_send_transaction_requested", {
+        providerMode: env.provider.mode,
+        payloadKeys: Object.keys(payload),
       });
-      return {
-        ok: true,
-        signature: "MOCK_TX_001",
-        request_payload: payload,
-      };
+      await ensureInitialized();
+
+      if (env.provider.mode === "mock") {
+        logBridge("sign_and_send_transaction_mock", {
+          payload,
+        });
+        return {
+          ok: true,
+          signature: "MOCK_TX_001",
+          request_payload: payload,
+          source: "mock_shell",
+          provider_mode: env.provider.mode,
+        };
+      }
+
+      if (!loggedIn) {
+        throw {
+          code: "not_logged_in",
+          message: "User must be logged in before sending a transaction.",
+        };
+      }
+
+      try {
+        const result = await signAndSendPrivySolanaTransaction(getClient(), payload);
+        logBridge("sign_and_send_transaction_done", {
+          signature: result.signature,
+          walletAddress: result.walletAddress,
+        });
+        return {
+          ok: true,
+          signature: result.signature,
+          address: result.walletAddress,
+          provider_mode: env.provider.mode,
+          source: "privy_embedded_wallet",
+        };
+      } catch (error) {
+        const normalizedError = normalizePrivyError(error);
+        logBridge("sign_and_send_transaction_failed", normalizedError);
+        throw normalizedError;
+      }
     },
   };
 }
@@ -348,6 +385,19 @@ function normalizePrivyError(error: unknown): Record<string, unknown> {
   ) {
     return {
       code: "unavailable",
+      message,
+    };
+  }
+
+  if (
+    normalizedMessage.includes("wallet") ||
+    normalizedMessage.includes("transaction") ||
+    normalizedMessage.includes("rpc") ||
+    normalizedMessage.includes("access token") ||
+    normalizedMessage.includes("logged in")
+  ) {
+    return {
+      code: privyCode || "transaction_error",
       message,
     };
   }

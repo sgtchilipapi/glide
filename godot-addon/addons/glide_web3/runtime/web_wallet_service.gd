@@ -32,6 +32,10 @@ func get_wallet_address() -> String:
 	return _wallet_address
 
 
+func refresh_session() -> void:
+	_request_bridge_call("getLoginState", {})
+
+
 func sign_and_send_transaction(payload: Dictionary) -> void:
 	_request_bridge_call("signAndSendTransaction", payload)
 

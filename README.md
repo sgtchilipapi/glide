@@ -7,6 +7,7 @@ Current status:
 - active Web auth provider is Privy
 - active shell bundle is built from `web-shell/` into `godot-addon/addons/glide_web3/web_shell/bridge.js`
 - the Godot plugin now manages Privy app/client/origin/callback config and injects it into the exported shell at build time
+- the active wallet bridge now supports real Privy-backed Solana `signAndSendTransaction` calls from a base64-encoded serialized transaction payload
 - legacy Phantom code is archived under `legacy/phantom/`
 
 Current developer flow:

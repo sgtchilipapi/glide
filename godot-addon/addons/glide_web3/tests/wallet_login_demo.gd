@@ -5,6 +5,8 @@ const WebWalletService := preload("res://addons/glide_web3/runtime/web_wallet_se
 var _wallet_service: WebWalletService
 var _status_label: Label
 var _address_label: Label
+var _rpc_url_edit: LineEdit
+var _transaction_base64_edit: TextEdit
 
 
 func _ready() -> void:
@@ -16,6 +18,8 @@ func _ready() -> void:
 	_wallet_service.tx_failed.connect(_on_tx_failed)
 	_build_ui()
 	_refresh_labels("Ready.")
+	_wallet_service.refresh_session()
+	_refresh_labels("Startup session refresh requested.")
 
 
 func _build_ui() -> void:
@@ -48,6 +52,34 @@ func _build_ui() -> void:
 	logout_button.pressed.connect(_on_logout_pressed)
 	button_row.add_child(logout_button)
 
+	var refresh_button := Button.new()
+	refresh_button.text = "Refresh Session"
+	refresh_button.pressed.connect(_on_refresh_session_pressed)
+	button_row.add_child(refresh_button)
+
+	var send_tx_button := Button.new()
+	send_tx_button.text = "Send Transaction"
+	send_tx_button.pressed.connect(_on_send_transaction_pressed)
+	button_row.add_child(send_tx_button)
+
+	var rpc_label := Label.new()
+	rpc_label.text = "Solana RPC URL"
+	root.add_child(rpc_label)
+
+	_rpc_url_edit = LineEdit.new()
+	_rpc_url_edit.placeholder_text = "https://api.devnet.solana.com"
+	_rpc_url_edit.text = "https://api.devnet.solana.com"
+	root.add_child(_rpc_url_edit)
+
+	var tx_label := Label.new()
+	tx_label.text = "Serialized transaction (base64)"
+	root.add_child(tx_label)
+
+	_transaction_base64_edit = TextEdit.new()
+	_transaction_base64_edit.custom_minimum_size = Vector2(0, 120)
+	_transaction_base64_edit.placeholder_text = "Paste a base64-encoded Solana transaction here."
+	root.add_child(_transaction_base64_edit)
+
 	_address_label = Label.new()
 	_address_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(_address_label)
@@ -65,6 +97,21 @@ func _on_login_pressed() -> void:
 func _on_logout_pressed() -> void:
 	_refresh_labels("Logout requested.")
 	_wallet_service.logout()
+
+
+func _on_refresh_session_pressed() -> void:
+	_refresh_labels("Session refresh requested.")
+	_wallet_service.refresh_session()
+
+
+func _on_send_transaction_pressed() -> void:
+	var rpc_url := _rpc_url_edit.text.strip_edges()
+	var transaction_base64 := _transaction_base64_edit.text.strip_edges()
+	_refresh_labels("Transaction requested.")
+	_wallet_service.sign_and_send_transaction({
+		"rpc_url": rpc_url,
+		"transaction_base64": transaction_base64,
+	})
 
 
 func _on_login_success(address: String) -> void:

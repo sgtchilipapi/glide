@@ -24,5 +24,9 @@ func get_wallet_address() -> String:
 	return ""
 
 
+func refresh_session() -> void:
+	push_warning("WalletService.refresh_session() is not implemented.")
+
+
 func sign_and_send_transaction(payload: Dictionary) -> void:
 	push_warning("WalletService.sign_and_send_transaction() is not implemented.")

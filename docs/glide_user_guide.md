@@ -195,21 +195,46 @@ In mock mode:
 - login returns a mock success
 - address is `MOCK_ADDRESS_001`
 
-## Important Current Limitation
+## Solana Transaction Payload
 
-The active runtime auth provider is Privy, but the transaction path is still only stubbed in Glide.
+Glide now supports a real Privy-backed Solana `signAndSendTransaction` path.
 
-So current production-ready area:
+Current Godot-side payload shape:
+
+```gdscript
+{
+  "rpc_url": "https://api.devnet.solana.com",
+  "transaction_base64": "<base64 serialized Solana transaction>",
+  "options": {
+    "skipPreflight": false,
+    "maxRetries": 3,
+    "preflightCommitment": "confirmed"
+  }
+}
+```
+
+Notes:
+
+- `transaction_base64` must be a serialized Solana transaction encoded as base64
+- Glide will deserialize it in the browser shell
+- Glide then asks Privy’s embedded Solana wallet provider to sign and send it
+- `rpc_url` is required because the current shell path creates a `Connection` client from it
+
+## Current Capability Boundary
+
+Current production-ready area:
 
 - wrapped Web export
 - shell bridge
 - Privy login configuration path
 - Privy OAuth callback completion path
+- Privy-backed Solana sign-and-send bridge path
 
 Not yet finalized:
 
-- real transaction signing and send path
-- backend-prepared transaction execution
+- a Godot-native transaction builder helper
+- backend-prepared transaction execution recipes
+- cleanup/removal of temporary shell debug output once transaction flow is fully verified
 
 ## Active Source Of Truth
 
